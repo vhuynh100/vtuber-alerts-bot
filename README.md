@@ -1,9 +1,11 @@
 # VTuber Alerts Bot
 
-## Prerequisites:
+Discord bot that sends alerts to a specified channel when a streamer goes live.
+
+### Prerequisites:
 Python 3.12 or lower
 
-To run the bot:
+### To run the bot:
 ```
-py -3.12 main.py
+py main.py
 ```
