@@ -16,35 +16,35 @@ YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
 YOUTUBE_CHANNEL_IDS = [
     ## Nijisanji EN
     "UCIeSUTOTkF9Hs7q3SGcO-Ow", # Elira Pendora
-    "UCwaS8_S7kMiKA3izlTWHbQg",  # Maria Marionette
-    "UCBURM8S4LH7cRZ0Clea9RDA", # Reimu Endou
-    "UChKXd7oqD18qiIYBoRIHTlw", # Meloco Kyoran
+    # "UCwaS8_S7kMiKA3izlTWHbQg",  # Maria Marionette
+    # "UCBURM8S4LH7cRZ0Clea9RDA", # Reimu Endou
+    # "UChKXd7oqD18qiIYBoRIHTlw", # Meloco Kyoran
 
     ## Hololive EN Girls
     # Myth
-    "UCHsx4Hqa-1ORjQTh9TYDhww",  # Takanashi Kiara
-    "UCL_qhgtOy0dy1Agp8vkySQg",  # Mori Calliope
-    "UCMwGHR0BTZuLsmjY_NT5Pwg",  # Ninomae Ina'nis
-    "UCoSrY_IQQVpmIRZ9Xf-y93g",  # Gawr Gura
+    # "UCHsx4Hqa-1ORjQTh9TYDhww",  # Takanashi Kiara
+    # "UCL_qhgtOy0dy1Agp8vkySQg",  # Mori Calliope
+    # "UCMwGHR0BTZuLsmjY_NT5Pwg",  # Ninomae Ina'nis
+    # "UCoSrY_IQQVpmIRZ9Xf-y93g",  # Gawr Gura
 
-    # Promise
-    "UC8rcEBzJSleTkf_-agPM20g",  # IRyS
-    "UCO_aKKYxn4tvrqPjcTzZ6EQ",  # Ceres Fauna
-    "UCmbs8T6MWqUHP1tIQvSgKrg",  # Ouro Kronii
-    "UC3n5uGu18FoCy23ggWWp8tA",  # Nanashi Mumei
-    "UCgmPnx-EEeOrZSg5Tiw7ZRQ",  # Hakos Baelz
+    # # Promise
+    # "UC8rcEBzJSleTkf_-agPM20g",  # IRyS
+    # "UCO_aKKYxn4tvrqPjcTzZ6EQ",  # Ceres Fauna
+    # "UCmbs8T6MWqUHP1tIQvSgKrg",  # Ouro Kronii
+    # "UC3n5uGu18FoCy23ggWWp8tA",  # Nanashi Mumei
+    # "UCgmPnx-EEeOrZSg5Tiw7ZRQ",  # Hakos Baelz
 
-    # Advent
-    "UCgnfPPb9JI3e9A4cXHnWbyg",  # Shiori Novella
-    "UC9p_lqQ0FEDz327Vgf5JwqA",  # Koseki Bijou 	
-    "UC_sFNM0z0MWm9A6WlKPuMMg",  # Nerissa Ravencroft
-    "UCt9H_RpQzhxzlyBxFqrdHqA",  # FUWAMOCO
+    # # Advent
+    # "UCgnfPPb9JI3e9A4cXHnWbyg",  # Shiori Novella
+    # "UC9p_lqQ0FEDz327Vgf5JwqA",  # Koseki Bijou 	
+    # "UC_sFNM0z0MWm9A6WlKPuMMg",  # Nerissa Ravencroft
+    # "UCt9H_RpQzhxzlyBxFqrdHqA",  # FUWAMOCO
 
-    # Justice
-    "UCW5uhrG1eCBYditmhL0Ykjw",  # Elizabeth Rose Bloodflame
-    "UCl69AEx4MdqMZH7Jtsm7Tig",  # Raora Panthera
-    "UCDHABijvPBnJm7F-KlNME3w",  # Gigi Murin
-    "UCvN5h1ShZtc7nly3pezRayg",  # Cecilia Immergreen
+    # # Justice
+    # "UCW5uhrG1eCBYditmhL0Ykjw",  # Elizabeth Rose Bloodflame
+    # "UCl69AEx4MdqMZH7Jtsm7Tig",  # Raora Panthera
+    # "UCDHABijvPBnJm7F-KlNME3w",  # Gigi Murin
+    # "UCvN5h1ShZtc7nly3pezRayg",  # Cecilia Immergreen
 ]
 
 # Initialize Discord bot
@@ -72,7 +72,7 @@ def fetch_recent_video_ids(channel_id):
     else:
         print(f"Error: Unable to fetch RSS feed for channel id: {channel_id}. Status code: {response.status_code}")
 
-    return video_ids
+    return video_ids[:5]
 
 def check_videos_live(video_ids):
     """Check if videos are live using the YouTube API."""
@@ -113,8 +113,10 @@ async def check_for_live_streams():
         
         new_videos = [video for video in video_ids if video not in checked_videos] # Filter out already-checked videos
         if not new_videos:
+            print("skipping channel because no new videos to check...") # TODO: Delete
             continue  # Skip if no new videos to check
         
+        print("new videos detected. checking if videos are live...") # TODO: Delete
         live_videos = check_videos_live(new_videos)
 
         for title, link in live_videos:
@@ -130,7 +132,7 @@ async def set_channel(ctx):
     active_channel_id = ctx.channel.id
     await ctx.send(f"✅ This channel (`{ctx.channel.name}`) is now set for VTuber live notifications!")
 
-@tasks.loop(seconds=15)
+@tasks.loop(minutes=1)
 async def periodic_live_stream_check():
     await check_for_live_streams()
 
