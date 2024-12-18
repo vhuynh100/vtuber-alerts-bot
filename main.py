@@ -5,6 +5,7 @@ from discord.ext import commands, tasks
 from dotenv import load_dotenv
 import requests
 import xml.etree.ElementTree as ET
+import time
 
 # Load environment variables
 load_dotenv()
@@ -76,7 +77,7 @@ def fetch_recent_video_ids(channel_id):
 
 def check_videos_live(video_ids):
     """Check if videos are live using the YouTube API."""
-    live_videos = [] # (title, link) tuples
+    live_videos = [] # (channel_title, title, link) tuples
     if not video_ids:
         return live_videos # No videos to check
     
@@ -95,8 +96,9 @@ def check_videos_live(video_ids):
             if snippet.get("liveBroadcastContent") == "live": # Check if the stream has started
                 video_id = item["id"]
                 title = item["snippet"]["title"]
+                channel_title = item["snippet"]["channelTitle"]
                 link = f"https://www.youtube.com/watch?v={video_id}"
-                live_videos.append((title, link))
+                live_videos.append((video_id, channel_title, title, link))
     else:
         print(f"Error: Unable to fetch video details. Status code: {response.status_code}")
 
@@ -119,11 +121,29 @@ async def check_for_live_streams():
         print("new videos detected. checking if videos are live...") # TODO: Delete
         live_videos = check_videos_live(new_videos)
 
-        for title, link in live_videos:
+        for video_id, channel_title, title, link in live_videos:
             checked_videos.update(new_videos)
             channel = bot.get_channel(active_channel_id)
             if channel:
-                await channel.send(f"🎉 **{title}** is live! Watch here: {link}")
+                embed = discord.Embed(
+                    color=discord.Color.blue(),
+                    title="LIVE on YouTube",
+                    url=link,
+                    description=title,
+                )
+                embed.set_author(
+                    name=channel_title,
+                )
+                embed.set_thumbnail(
+                    # url="https://upload.wikimedia.org/wikipedia/commons/4/48/Hololive_logo.png" # TODO: Dynamically add logo
+                    url="https://upload.wikimedia.org/wikipedia/commons/archive/7/73/20240308191045%21Nijisanji_Logo.png"
+                )
+                embed.add_field(name=":clock: Live", value=f"<t:{int(time.time())}:R>", inline=True)
+                # embed.add_field(name="Viewers", value=f"{} watching now", inline=True) # TODO: use "concurrentViewers" field in YT API response JSON
+                thumbnail_url = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
+                embed.set_image(url=thumbnail_url)
+                # embed.set_footer(text="Youtube • 7/30/2023 4:01 PM") # TODO: Add stream date
+                await channel.send(embed=embed)
 
 """Discord Bot Functions"""
 @bot.command(name="setchannel")
