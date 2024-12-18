@@ -14,11 +14,37 @@ YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
 
 # List of YouTube channel IDs (multiple VTubers)
 YOUTUBE_CHANNEL_IDS = [
-    # "UCIeSUTOTkF9Hs7q3SGcO-Ow", # Elira Pendora
-    # "UCJubINhCcFXlsBwnHp0wl_g", # Maimoto Keisuke
-    # "UCwaS8_S7kMiKA3izlTWHbQg",  # Maria Marionette
-    # "UCBURM8S4LH7cRZ0Clea9RDA", # Reimu Endou,
+    ## Nijisanji EN
+    "UCIeSUTOTkF9Hs7q3SGcO-Ow", # Elira Pendora
+    "UCwaS8_S7kMiKA3izlTWHbQg",  # Maria Marionette
+    "UCBURM8S4LH7cRZ0Clea9RDA", # Reimu Endou
     "UChKXd7oqD18qiIYBoRIHTlw", # Meloco Kyoran
+
+    ## Hololive EN Girls
+    # Myth
+    "UCHsx4Hqa-1ORjQTh9TYDhww",  # Takanashi Kiara
+    "UCL_qhgtOy0dy1Agp8vkySQg",  # Mori Calliope
+    "UCMwGHR0BTZuLsmjY_NT5Pwg",  # Ninomae Ina'nis
+    "UCoSrY_IQQVpmIRZ9Xf-y93g",  # Gawr Gura
+
+    # Promise
+    "UC8rcEBzJSleTkf_-agPM20g",  # IRyS
+    "UCO_aKKYxn4tvrqPjcTzZ6EQ",  # Ceres Fauna
+    "UCmbs8T6MWqUHP1tIQvSgKrg",  # Ouro Kronii
+    "UC3n5uGu18FoCy23ggWWp8tA",  # Nanashi Mumei
+    "UCgmPnx-EEeOrZSg5Tiw7ZRQ",  # Hakos Baelz
+
+    # Advent
+    "UCgnfPPb9JI3e9A4cXHnWbyg",  # Shiori Novella
+    "UC9p_lqQ0FEDz327Vgf5JwqA",  # Koseki Bijou 	
+    "UC_sFNM0z0MWm9A6WlKPuMMg",  # Nerissa Ravencroft
+    "UCt9H_RpQzhxzlyBxFqrdHqA",  # FUWAMOCO
+
+    # Justice
+    "UCW5uhrG1eCBYditmhL0Ykjw",  # Elizabeth Rose Bloodflame
+    "UCl69AEx4MdqMZH7Jtsm7Tig",  # Raora Panthera
+    "UCDHABijvPBnJm7F-KlNME3w",  # Gigi Murin
+    "UCvN5h1ShZtc7nly3pezRayg",  # Cecilia Immergreen
 ]
 
 # Initialize Discord bot
