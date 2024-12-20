@@ -206,7 +206,7 @@ async def assign_to_route(interaction: discord.Interaction, streamer_channel_id:
     save_routes()
 
 @tree.command(name="unassign", description="Remove a streamer from a route")
-async def assign_to_route(interaction: discord.Interaction, streamer_channel_id: str):
+async def unassign_from_route(interaction: discord.Interaction, streamer_channel_id: str):
     """ Remove a YouTube channel ID from this Discord channel's notification list. """
     global routes
     discord_channel_id = interaction.channel_id
@@ -218,6 +218,8 @@ async def assign_to_route(interaction: discord.Interaction, streamer_channel_id:
         await interaction.response.send_message(f"✅ Unsubscribed from notifications for `{streamer_name}` in this Discord channel.")
     else:
         await interaction.response.send_message(f"⚠️ This channel is not subscribed to `{streamer_name}`.")
+
+    save_routes()
 
 @tasks.loop(seconds=15) # TODO: Change to 3 minutes when done testing
 async def periodic_live_stream_check():
