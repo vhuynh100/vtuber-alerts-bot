@@ -41,7 +41,7 @@ Kill all tmux sessions:
 tmux kill-server
 ```
 
-### Commands:
+## Commands:
 /assign: Assign a streamer to a route.
 ```
 /assign <streamer_channel_id>
