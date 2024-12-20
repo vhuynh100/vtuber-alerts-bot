@@ -115,10 +115,10 @@ async def check_for_live_streams():
         
         new_videos = [video for video in video_ids if video not in checked_videos] # Filter out already-checked videos
         if not new_videos:
-            print("skipping channel because no new videos to check...") # TODO: Delete
+            # print("skipping channel because no new videos to check...") # TODO: Delete
             continue  # Skip if no new videos to check
         
-        print("new videos detected. checking if videos are live...") # TODO: Delete
+        # print("new videos detected. checking if videos are live...") # TODO: Delete
         live_videos = check_videos_live(new_videos)
 
         for video_id, channel_title, title, link in live_videos:
@@ -138,7 +138,7 @@ async def check_for_live_streams():
                     # url="https://upload.wikimedia.org/wikipedia/commons/4/48/Hololive_logo.png" # TODO: Dynamically add logo
                     url="https://upload.wikimedia.org/wikipedia/commons/archive/7/73/20240308191045%21Nijisanji_Logo.png"
                 )
-                embed.add_field(name=":clock: Live", value=f"<t:{int(time.time())}:R>", inline=True)
+                embed.add_field(name=":clock3: Live", value=f"<t:{int(time.time())}:R>", inline=True)
                 # embed.add_field(name="Viewers", value=f"{} watching now", inline=True) # TODO: use "concurrentViewers" field in YT API response JSON
                 thumbnail_url = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
                 embed.set_image(url=thumbnail_url)
@@ -152,7 +152,7 @@ async def set_channel(ctx):
     active_channel_id = ctx.channel.id
     await ctx.send(f"✅ This channel (`{ctx.channel.name}`) is now set for VTuber live notifications!")
 
-@tasks.loop(minutes=1)
+@tasks.loop(seconds=15) # TODO: Change to 3 minutes when done testing
 async def periodic_live_stream_check():
     await check_for_live_streams()
 
