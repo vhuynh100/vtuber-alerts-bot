@@ -289,7 +289,7 @@ async def unassign_from_discord_channel(interaction: discord.Interaction, stream
 
     save_assignments()
 
-@tasks.loop(seconds=5) # TODO: Change to 3 minutes when done testing
+@tasks.loop(minutes=5) # TODO: Change to 3 minutes when done testing
 async def periodic_live_stream_check():
     await check_for_live_streams()
 
