@@ -55,5 +55,5 @@ tmux kill-server
 Note: To get a YouTube channel ID,
 1. Right click YouTube channel
 2. Click "View Page Source"
-3. Ctrl+F for "https://www.youtube.com/feeds/videos.xml?channel_id="
+3. Ctrl+F for "https://www.youtube.com/feeds/videos.xml?channel_id=" or "rssUrl"
 4. The channel ID is everything after "channel_id="
