@@ -167,6 +167,8 @@ async def check_for_live_streams():
                     # embed.set_footer(text="Youtube • 7/30/2023 4:01 PM") # TODO: Add stream date
                     await channel.send(embed=embed)
 
+            data["checked_videos"] = channel_checked_videos
+
 def get_channel_name(channel_id: str) -> str:
     """Fetch the channel name from YouTube's RSS feed."""
     url = f"https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}"
@@ -268,9 +270,16 @@ async def unassign_from_discord_channel(interaction: discord.Interaction, stream
 
     streamer_name = get_channel_name(streamer_channel_id)
 
-    for streamer in assignments[discord_channel_id]:
+    if discord_channel_id not in assignments:
+        await interaction.response.send_message(f"⚠️ This channel has no assignments.")
+        return
+
+    data = assignments[discord_channel_id]
+    streamers = data.get("streamers", [])
+
+    for streamer in streamers:
         if streamer.channel_id == streamer_channel_id:
-            assignments[discord_channel_id].remove(streamer)
+            streamers.remove(streamer)
             await interaction.response.send_message(f"✅ Unsubscribed from notifications for `{streamer_name}` in this Discord channel.")
             if assignments[discord_channel_id] == []:
                 del assignments[discord_channel_id]
