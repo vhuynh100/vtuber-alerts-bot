@@ -24,9 +24,12 @@ company_icons = {
 youtube_channel_ids = [
     # Nijisanji EN
     # "UCIeSUTOTkF9Hs7q3SGcO-Ow", # Elira Pendora
+    # "UCu-J8uIXuLZh16gG-cT1naw", # Finana Ryugu
+
     # "UCwaS8_S7kMiKA3izlTWHbQg",  # Maria Marionette
     # "UCBURM8S4LH7cRZ0Clea9RDA", # Reimu Endou
     # "UChKXd7oqD18qiIYBoRIHTlw", # Meloco Kyoran
+    # "UCR6qhsLpn62WVxCBK1dkLow", # Enna Alouette
 
     # # Hololive EN Girls
     # Myth
@@ -72,12 +75,11 @@ assignments = {
     #       discord_channel_id_1:
     #       {
     #           "streamers": [Streamer_1, Streamer_2, ...],
-    #           "checked_videos": set()
     #       },
 }
 
 # Track video IDs already checked
-# checked_videos = set()
+checked_videos = {} # {streamer_channel_id: set(checked_videos)}
 
 def fetch_recent_video_ids(channel_id):
     """Fetch recent video IDs from a YouTube channel's RSS feed."""
@@ -125,23 +127,25 @@ def check_videos_live(video_ids):
 
 async def check_for_live_streams():
     """Fetch recent videos, check if they are live, and notify Discord."""
-    global assignments
+    global assignments, checked_videos
 
     for discord_channel_id, data in assignments.items():
         streamers = data.get("streamers", [])
-        channel_checked_videos = data.get("checked_videos", set())
         
         for streamer in streamers:
+            if streamer.channel_id not in checked_videos:
+                checked_videos[streamer.channel_id] = set()
+
             video_ids = fetch_recent_video_ids(streamer.channel_id)
             
-            new_videos = [video for video in video_ids if video not in channel_checked_videos] # Filter out already-checked videos
+            new_videos = [video for video in video_ids if video not in checked_videos[streamer.channel_id]] # Filter out already-checked videos
             if not new_videos:
                 print(f"skipping {streamer.name} because no new videos to check...") # TODO: Delete
                 continue  # Skip if no new videos to check
             
             print(f"new videos detected for {streamer.name}. checking if videos are live...") # TODO: Delete
             live_videos = check_videos_live(new_videos)
-            channel_checked_videos.update(new_videos)
+            checked_videos[streamer.channel_id].update(new_videos)
 
             for video_id, channel_title, title, link in live_videos:
                 print(f"notifying about {streamer.name}'s video {title}") # TODO: Delete
@@ -166,8 +170,6 @@ async def check_for_live_streams():
                     embed.set_image(url=thumbnail_url)
                     # embed.set_footer(text="Youtube • 7/30/2023 4:01 PM") # TODO: Add stream date
                     await channel.send(embed=embed)
-
-            data["checked_videos"] = channel_checked_videos
 
 def get_channel_name(channel_id: str) -> str:
     """Fetch the channel name from YouTube's RSS feed."""
@@ -194,7 +196,6 @@ def save_assignments():
             {
                 k: {
                     "streamers": [{"channel_id": s.channel_id, "name": s.name, "company": s.company} for s in v["streamers"]],
-                    "checked_videos": list(v["checked_videos"]),
                 }
                 for k, v in assignments.items()
             },
@@ -210,8 +211,6 @@ def load_assignments():
             assignments = {
                 int(k): {
                     "streamers": [Streamer(s["channel_id"], s["name"], s.get("company", "indie")) for s in v.get("streamers", [])],
-                    # "checked_videos": set(v.get("checked_videos", [])), TODO: Decide if we want this or empty
-                    "checked_videos": set(), # TODO: Empty for testing
                 }
                 for k, v in data.items()
             }
@@ -228,7 +227,6 @@ async def list_assignments(interaction: discord.Interaction):
     assignment_names = [f"`{streamer.name}`" for streamer in channel_assignments.get("streamers")]
     formatted_names = ", ".join(assignment_names) if assignment_names else "No streamers assigned."
     await interaction.response.send_message(f"✅ This Discord channel is subscribed to notifications for: {formatted_names}")
-
 
 @tree.command(name="assign", description="Assign a streamer to a Discord channel")
 async def assign_to_discord_channel(interaction: discord.Interaction, streamer_channel_id: str):
