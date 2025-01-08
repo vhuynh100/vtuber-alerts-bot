@@ -26,6 +26,8 @@ youtube_channel_ids = [
     # "UCIeSUTOTkF9Hs7q3SGcO-Ow", # Elira Pendora
     # "UCu-J8uIXuLZh16gG-cT1naw", # Finana Ryugu
 
+    # "UC4WvIIAo89_AzGUh1AZ6Dkg", # Rosemi Lovelock
+
     # "UCwaS8_S7kMiKA3izlTWHbQg",  # Maria Marionette
     # "UCBURM8S4LH7cRZ0Clea9RDA", # Reimu Endou
     # "UChKXd7oqD18qiIYBoRIHTlw", # Meloco Kyoran
@@ -129,47 +131,54 @@ async def check_for_live_streams():
     """Fetch recent videos, check if they are live, and notify Discord."""
     global assignments, checked_videos
 
-    for discord_channel_id, data in assignments.items():
-        streamers = data.get("streamers", [])
-        
-        for streamer in streamers:
+    for discord_channel_id, data in assignments.items(): # 1: {"streamers": ["12345"]}, 2: {"streamers": ["12345"]},
+        streamers = data.get("streamers", []) # ["12345"]
+
+        for streamer in streamers: # "12345" (streamer.channel_id)
             if streamer.channel_id not in checked_videos:
                 checked_videos[streamer.channel_id] = set()
 
-            video_ids = fetch_recent_video_ids(streamer.channel_id)
+            video_ids = fetch_recent_video_ids(streamer.channel_id) # video_ids = [123, 543, 654, ...]
             
             new_videos = [video for video in video_ids if video not in checked_videos[streamer.channel_id]] # Filter out already-checked videos
+            # new_videos = [] TODO: Delete
             if not new_videos:
                 print(f"skipping {streamer.name} because no new videos to check...") # TODO: Delete
                 continue  # Skip if no new videos to check
             
             print(f"new videos detected for {streamer.name}. checking if videos are live...") # TODO: Delete
-            live_videos = check_videos_live(new_videos)
-            checked_videos[streamer.channel_id].update(new_videos)
+            live_videos = check_videos_live(new_videos) # live_videos = ["123"]
 
-            for video_id, channel_title, title, link in live_videos:
-                print(f"notifying about {streamer.name}'s video {title}") # TODO: Delete
-                # Notify only the appropriate Discord channels
-                channel = bot.get_channel(discord_channel_id)
-                if channel:
-                    embed = discord.Embed(
-                        color=discord.Color.blue(),
-                        title="LIVE on YouTube",
-                        url=link,
-                        description=title,
-                    )
-                    embed.set_author(
-                        name=channel_title,
-                    )
-                    embed.set_thumbnail(
-                        url=company_icons.get(streamer.company, "")
-                    )
-                    embed.add_field(name=":clock3: Live", value=f"<t:{int(time.time())}:R>", inline=True)
-                    # embed.add_field(name="Viewers", value=f"{} watching now", inline=True) # TODO: use "concurrentViewers" field in YT API response JSON
-                    thumbnail_url = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
-                    embed.set_image(url=thumbnail_url)
-                    # embed.set_footer(text="Youtube • 7/30/2023 4:01 PM") # TODO: Add stream date
-                    await channel.send(embed=embed)
+            for discord_channel_id, data in assignments.items():
+                if streamer in data.get("streamers", []):
+                    await send_embed(live_videos, streamer, discord_channel_id)
+
+            checked_videos[streamer.channel_id].update(new_videos) # checked_videos = { "12345": [123, 543, 654, ...] }
+
+async def send_embed(live_videos, streamer, discord_channel_id):
+    for video_id, channel_title, title, link in live_videos: # ["123"]
+        print(f"notifying about {streamer.name}'s video {title}") # TODO: Delete
+        # Notify only the appropriate Discord channels
+        channel = bot.get_channel(discord_channel_id) # "1"
+        if channel:
+            embed = discord.Embed(
+                color=discord.Color.blue(),
+                title="LIVE on YouTube",
+                url=link,
+                description=title,
+            )
+            embed.set_author(
+                name=channel_title,
+            )
+            embed.set_thumbnail(
+                url=company_icons.get(streamer.company, "")
+            )
+            embed.add_field(name=":clock3: Live", value=f"<t:{int(time.time())}:R>", inline=True)
+            # embed.add_field(name="Viewers", value=f"{} watching now", inline=True) # TODO: use "concurrentViewers" field in YT API response JSON
+            thumbnail_url = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
+            embed.set_image(url=thumbnail_url)
+            # embed.set_footer(text="Youtube • 7/30/2023 4:01 PM") # TODO: Add stream date
+            await channel.send(embed=embed)
 
 def get_channel_name(channel_id: str) -> str:
     """Fetch the channel name from YouTube's RSS feed."""
@@ -287,7 +296,7 @@ async def unassign_from_discord_channel(interaction: discord.Interaction, stream
 
     save_assignments()
 
-@tasks.loop(minutes=5) # TODO: Change to 3 minutes when done testing
+@tasks.loop(seconds=5) # TODO: Change to 3 or 5 minutes when done testing
 async def periodic_live_stream_check():
     await check_for_live_streams()
 
