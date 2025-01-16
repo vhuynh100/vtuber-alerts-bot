@@ -312,7 +312,7 @@ async def unsubscribe_from_channel(interaction: discord.Interaction, streamer_ch
                 del subscriptions[discord_channel_id]
             break
     else:
-        await interaction.response.send_message(f"⚠️ This channel is not subscribed to `{streamer_name}`.")
+        await interaction.response.send_message(f"⚠️ This channel is not subscribed to `{streamer_name} ({streamer_channel_id})`.")
 
     save_subscriptions()
 
