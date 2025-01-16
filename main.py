@@ -80,7 +80,7 @@ class Streamer:
         self.name = name
         self.company = company
 
-assignments = {
+subscriptions = {
     #       discord_channel_id_1:
     #       {
     #           "streamers": [Streamer_1, Streamer_2, ...],
@@ -134,9 +134,9 @@ def check_videos_live(video_ids):
 
 async def check_for_live_streams():
     """Fetch recent videos, check if they are live, and notify Discord."""
-    global assignments
+    global subscriptions
 
-    for discord_channel_id, data in assignments.items(): # 1: {"streamers": ["12345"], "checked_videos": {"12345": set(123, 543, 654)}}
+    for discord_channel_id, data in subscriptions.items(): # 1: {"streamers": ["12345"], "checked_videos": {"12345": set(123, 543, 654)}}
         streamers = data.get("streamers", []) # ["12345"]
         checked_videos = data.get("checked_videos", {})
         print(f"initial checked videos for {discord_channel_id}: {checked_videos}") # TODO: Delete
@@ -160,9 +160,9 @@ async def check_for_live_streams():
 
             await send_embed(live_videos, streamer, discord_channel_id)
 
-            assignments[discord_channel_id]["checked_videos"] = checked_videos
+            subscriptions[discord_channel_id]["checked_videos"] = checked_videos
 
-        save_assignments()
+        save_subscriptions()
 
 async def send_embed(live_videos, streamer, discord_channel_id):
     for video_id, channel_title, title, link in live_videos:
@@ -207,9 +207,9 @@ def get_channel_name(channel_id: str) -> str:
     
     return "Unknown"
 
-def save_assignments():
-    """Save assignments to a file to persist assignments dict. Serialize code into a usable format for JSON compatibility."""
-    with open("assignments.json", "w") as f:
+def save_subscriptions():
+    """Save subscriptions to a file to persist subscriptions dict. Serialize code into a usable format for JSON compatibility."""
+    with open("subscriptions.json", "w") as f:
         json.dump(
             {
                 k: {
@@ -219,18 +219,18 @@ def save_assignments():
                         for streamer_id, video_ids in v.get("checked_videos", {}).items()
                     },
                 }
-                for k, v in assignments.items()
+                for k, v in subscriptions.items()
             },
             f,
         )
 
-def load_assignments():
-    """Load assignments from file. Deserialize JSON into usable code."""
-    global assignments
+def load_subscriptions():
+    """Load subscriptions from file. Deserialize JSON into usable code."""
+    global subscriptions
     try:
-        with open("assignments.json", "r") as f:
+        with open("subscriptions.json", "r") as f:
             data = json.load(f)
-            assignments = {
+            subscriptions = {
                 int(k): {
                     "streamers": [Streamer(s["channel_id"], s["name"], s.get("company", "indie")) for s in v.get("streamers", [])],
                     "checked_videos": {
@@ -241,24 +241,24 @@ def load_assignments():
                 for k, v in data.items()
             }
     except FileNotFoundError:
-        assignments = {}
+        subscriptions = {}
 
 """Discord Bot Functions"""
-@tree.command(name="listassignments", description="List the streamers assigned to the Discord channel")
-async def list_assignments(interaction: discord.Interaction):
-    # View list of assignments
+@tree.command(name="listsubscriptions", description="List the streamers the Discord channel is subscribed to alerts for")
+async def list_subscriptions(interaction: discord.Interaction):
+    # View list of subscriptions
     discord_channel_id = interaction.channel_id
-    channel_assignments = assignments.get(discord_channel_id, [])
+    channel_subscriptions = subscriptions.get(discord_channel_id, [])
     
-    assignment_names = [f"`{streamer.name}`" for streamer in channel_assignments.get("streamers")]
-    formatted_names = ", ".join(assignment_names) if assignment_names else "No streamers assigned."
+    subscription_names = [f"`{streamer.name} ({streamer.channel_id})`" for streamer in channel_subscriptions.get("streamers")]
+    formatted_names = ", ".join(subscription_names) if subscription_names else "No streamers assigned."
     await interaction.response.send_message(f"✅ This Discord channel is subscribed to notifications for: {formatted_names}")
 
-@tree.command(name="assign", description="Assign a streamer to a Discord channel")
-async def assign_to_discord_channel(interaction: discord.Interaction, streamer_channel_id: str):
+@tree.command(name="subscribe", description="Subscribe a Discord channel to alerts for a streamer")
+async def subscribe_to_channel(interaction: discord.Interaction, streamer_channel_id: str):
     """ Add a YouTube channel ID to this Discord channel's notification list. """
     # 2 options: channel (string: channel), mention (string: role or "None")
-    global assignments
+    global subscriptions
     discord_channel_id = interaction.channel_id
 
     streamer_name = get_channel_name(streamer_channel_id)
@@ -273,50 +273,50 @@ async def assign_to_discord_channel(interaction: discord.Interaction, streamer_c
     else:
         streamer_company = "indie"
 
-    if discord_channel_id not in assignments:
-        assignments[discord_channel_id] = {
+    if discord_channel_id not in subscriptions:
+        subscriptions[discord_channel_id] = {
             "streamers": [],
             "checked_videos": {}
         }
 
     streamer_to_assign = Streamer(streamer_channel_id, streamer_name, streamer_company)
 
-    if streamer_to_assign not in assignments[discord_channel_id]["streamers"]:
-        assignments[discord_channel_id]["streamers"].append(streamer_to_assign)
-        await interaction.response.send_message(f"✅ Subscribed to notifications for `{streamer_to_assign.name}` in this Discord channel.")
+    if streamer_to_assign not in subscriptions[discord_channel_id]["streamers"]:
+        subscriptions[discord_channel_id]["streamers"].append(streamer_to_assign)
+        await interaction.response.send_message(f"✅ Subscribed to notifications for `{streamer_to_assign.name} ({streamer_to_assign.channel_id})` in this Discord channel.")
     else:
-        await interaction.response.send_message(f"⚠️ This channel is already subscribed to notifications for `{streamer_to_assign.name}`.")
+        await interaction.response.send_message(f"⚠️ This channel is already subscribed to notifications for `{streamer_to_assign.name} ({streamer_to_assign.channel_id})`.")
 
-    save_assignments()
+    save_subscriptions()
 
-@tree.command(name="unassign", description="Remove a streamer from a Discord channel")
-async def unassign_from_discord_channel(interaction: discord.Interaction, streamer_channel_id: str):
+@tree.command(name="unsubscribe", description="Remove a streamer from a Discord channel")
+async def unsubscribe_from_channel(interaction: discord.Interaction, streamer_channel_id: str):
     """ Remove a YouTube channel ID from this Discord channel's notification list. """
-    global assignments
+    global subscriptions
     discord_channel_id = interaction.channel_id
 
     streamer_name = get_channel_name(streamer_channel_id)
 
-    if discord_channel_id not in assignments:
-        await interaction.response.send_message(f"⚠️ This channel has no assignments.")
+    if discord_channel_id not in subscriptions:
+        await interaction.response.send_message(f"⚠️ This channel has no subscriptions.")
         return
 
-    data = assignments[discord_channel_id]
+    data = subscriptions[discord_channel_id]
     streamers = data.get("streamers", [])
 
     for streamer in streamers:
         if streamer.channel_id == streamer_channel_id:
             streamers.remove(streamer)
-            await interaction.response.send_message(f"✅ Unsubscribed from notifications for `{streamer_name}` in this Discord channel.")
-            if assignments[discord_channel_id] == []:
-                del assignments[discord_channel_id]
+            await interaction.response.send_message(f"✅ Unsubscribed from notifications for `{streamer_name} ({streamer_channel_id})` in this Discord channel.")
+            if subscriptions[discord_channel_id] == []:
+                del subscriptions[discord_channel_id]
             break
     else:
         await interaction.response.send_message(f"⚠️ This channel is not subscribed to `{streamer_name}`.")
 
-    save_assignments()
+    save_subscriptions()
 
-@tree.command(name="ids", description="View list of streamer channel ids available to assign")
+@tree.command(name="ids", description="View quick list of streamer channel ids available to subscribe to")
 async def list_ids(interaction: discord.Interaction):
     embed = discord.Embed(
         color=discord.Color.blue(),
@@ -369,7 +369,7 @@ async def periodic_live_stream_check():
 @bot.event
 async def on_ready():
     print(f"Logged in as {bot.user}")
-    load_assignments()
+    load_subscriptions()
     await tree.sync() # Sync commands to the server
     periodic_live_stream_check.start()
 
