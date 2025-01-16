@@ -40,6 +40,10 @@ Kill all tmux sessions:
 ```
 tmux kill-server
 ```
+View all running tmux sessions:
+```
+tmux ls
+```
 
 ## Commands:
 /assign: Assign a streamer to a route.
