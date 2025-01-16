@@ -32,6 +32,7 @@ youtube_channel_ids = [
     # "UCBURM8S4LH7cRZ0Clea9RDA", # Reimu Endou
     # "UChKXd7oqD18qiIYBoRIHTlw", # Meloco Kyoran
     # "UCR6qhsLpn62WVxCBK1dkLow", # Enna Alouette
+    # "UC47rNmkDcNgbOcM-2BwzJTQ", "Millie Parfait"
 
     # "UCGhqxhovNfaPBpxfCruy9EA", # Fulgur Ovid
 
@@ -310,6 +311,32 @@ async def unassign_from_discord_channel(interaction: discord.Interaction, stream
         await interaction.response.send_message(f"⚠️ This channel is not subscribed to `{streamer_name}`.")
 
     save_assignments()
+
+@tree.command(name="ids", description="View list of streamer channel ids available to assign")
+async def list_ids(interaction: discord.Interaction):
+    # View list of streamer channel ids
+    discord_channel_id = interaction.channel_id
+    
+    # assignment_names = [f"`{streamer.name}`" for streamer in channel_assignments.get("streamers")]
+    # formatted_names = ", ".join(assignment_names) if assignment_names else "No streamers assigned."
+    # await interaction.response.send_message(f"✅ This Discord channel is subscribed to notifications for: {formatted_names}")
+
+    channel = bot.get_channel(discord_channel_id)
+    if channel:
+        embed = discord.Embed(
+            color=discord.Color.blue(),
+            title="List of channel IDs",
+            description="Elira Pendora: UCIeSUTOTkF9Hs7q3SGcO-Ow"
+        )
+        # embed.set_author(
+        #     name=channel_title,
+        # )
+        # embed.add_field(name=":clock3: Live", value=f"<t:{int(time.time())}:R>", inline=True)
+        # embed.add_field(name="Viewers", value=f"{} watching now", inline=True) # TODO: use "concurrentViewers" field in YT API response JSON
+        # thumbnail_url = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
+        # embed.set_image(url=thumbnail_url)
+        # embed.set_footer(text="Youtube • 7/30/2023 4:01 PM") # TODO: Add stream date
+        await channel.send(embed=embed)
 
 @tasks.loop(minutes=5) # TODO: Change to 3 or 5 minutes when done testing
 async def periodic_live_stream_check():
