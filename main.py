@@ -27,14 +27,18 @@ youtube_channel_ids = [
     # "UCu-J8uIXuLZh16gG-cT1naw", # Finana Ryugu
 
     # "UC4WvIIAo89_AzGUh1AZ6Dkg", # Rosemi Lovelock
+    # "UCgA2jKRkqpY_8eysPUs8sjw", # Petra Gurin
 
-    # "UCwaS8_S7kMiKA3izlTWHbQg",  # Maria Marionette
-    # "UCBURM8S4LH7cRZ0Clea9RDA", # Reimu Endou
-    # "UChKXd7oqD18qiIYBoRIHTlw", # Meloco Kyoran
     # "UCR6qhsLpn62WVxCBK1dkLow", # Enna Alouette
     # "UC47rNmkDcNgbOcM-2BwzJTQ", "Millie Parfait"
+    # "UCBURM8S4LH7cRZ0Clea9RDA", # Reimu Endou
+    
+
+    # "UCwaS8_S7kMiKA3izlTWHbQg",  # Maria Marionette
 
     # "UCGhqxhovNfaPBpxfCruy9EA", # Fulgur Ovid
+
+    # "UChKXd7oqD18qiIYBoRIHTlw", # Meloco Kyoran
 
     # # Hololive EN Girls
     # Myth
@@ -314,29 +318,49 @@ async def unassign_from_discord_channel(interaction: discord.Interaction, stream
 
 @tree.command(name="ids", description="View list of streamer channel ids available to assign")
 async def list_ids(interaction: discord.Interaction):
-    # View list of streamer channel ids
-    discord_channel_id = interaction.channel_id
-    
-    # assignment_names = [f"`{streamer.name}`" for streamer in channel_assignments.get("streamers")]
-    # formatted_names = ", ".join(assignment_names) if assignment_names else "No streamers assigned."
-    # await interaction.response.send_message(f"✅ This Discord channel is subscribed to notifications for: {formatted_names}")
+    embed = discord.Embed(
+        color=discord.Color.blue(),
+        title="List of channel IDs",
+    )
+    embed.add_field(name=":rainbow: Nijisanji", value=f"""
+    Elira Pendora: UCIeSUTOTkF9Hs7q3SGcO-Ow
+    Finana Ryugu: UCu-J8uIXuLZh16gG-cT1naw
 
-    channel = bot.get_channel(discord_channel_id)
-    if channel:
-        embed = discord.Embed(
-            color=discord.Color.blue(),
-            title="List of channel IDs",
-            description="Elira Pendora: UCIeSUTOTkF9Hs7q3SGcO-Ow"
-        )
-        # embed.set_author(
-        #     name=channel_title,
-        # )
-        # embed.add_field(name=":clock3: Live", value=f"<t:{int(time.time())}:R>", inline=True)
-        # embed.add_field(name="Viewers", value=f"{} watching now", inline=True) # TODO: use "concurrentViewers" field in YT API response JSON
-        # thumbnail_url = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
-        # embed.set_image(url=thumbnail_url)
-        # embed.set_footer(text="Youtube • 7/30/2023 4:01 PM") # TODO: Add stream date
-        await channel.send(embed=embed)
+    Rosemi Lovelock: UC4WvIIAo89_AzGUh1AZ6Dkg
+    Petra Gurin: UCgA2jKRkqpY_8eysPUs8sjw
+
+    Enna Alouette: UCR6qhsLpn62WVxCBK1dkLow
+    Millie Parfait: UC47rNmkDcNgbOcM-2BwzJTQ
+    Reimu Endou: UCBURM8S4LH7cRZ0Clea9RDA
+    
+    Maria Marionette: UCwaS8_S7kMiKA3izlTWHbQg
+    Fulgur Ovid: UCGhqxhovNfaPBpxfCruy9EA
+    Meloco Kyoran: UChKXd7oqD18qiIYBoRIHTlw
+    """, inline=False)
+    embed.add_field(name=":arrow_forward: Hololive", value=f"""
+    Takanashi Kiara: UCHsx4Hqa-1ORjQTh9TYDhww  
+    Mori Calliope: UCL_qhgtOy0dy1Agp8vkySQg  
+    Ninomae Ina'nis: UCMwGHR0BTZuLsmjY_NT5Pwg  
+    Gawr Gura: UCoSrY_IQQVpmIRZ9Xf-y93g  
+
+    IRyS: UC8rcEBzJSleTkf_-agPM20g  
+    Ceres Fauna: UCO_aKKYxn4tvrqPjcTzZ6EQ  
+    Ouro Kronii: UCmbs8T6MWqUHP1tIQvSgKrg  
+    Nanashi Mumei: UC3n5uGu18FoCy23ggWWp8tA  
+    Hakos Baelz: UCgmPnx-EEeOrZSg5Tiw7ZRQ  
+
+    Shiori Novella: UCgnfPPb9JI3e9A4cXHnWbyg  
+    Koseki Bijou: UC9p_lqQ0FEDz327Vgf5JwqA  
+    Nerissa Ravencroft: UC_sFNM0z0MWm9A6WlKPuMMg  
+    FUWAMOCO: UCt9H_RpQzhxzlyBxFqrdHqA  
+
+    Elizabeth Rose Bloodflame: UCW5uhrG1eCBYditmhL0Ykjw  
+    Raora Panthera: UCl69AEx4MdqMZH7Jtsm7Tig  
+    Gigi Murin: UCDHABijvPBnJm7F-KlNME3w  
+    Cecilia Immergreen: UCvN5h1ShZtc7nly3pezRayg  
+    """, inline=False)
+
+    await interaction.response.send_message(embed=embed)
 
 @tasks.loop(minutes=5) # TODO: Change to 3 or 5 minutes when done testing
 async def periodic_live_stream_check():
