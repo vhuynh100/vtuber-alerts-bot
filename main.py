@@ -50,7 +50,6 @@ youtube_channel_ids = [
 
     # # Promise
     # "UC8rcEBzJSleTkf_-agPM20g",  # IRyS
-    # "UCO_aKKYxn4tvrqPjcTzZ6EQ",  # Ceres Fauna
     # "UCmbs8T6MWqUHP1tIQvSgKrg",  # Ouro Kronii
     # "UC3n5uGu18FoCy23ggWWp8tA",  # Nanashi Mumei
     # "UCgmPnx-EEeOrZSg5Tiw7ZRQ",  # Hakos Baelz
@@ -85,7 +84,7 @@ subscriptions = {
     #       discord_channel_id_1:
     #       {
     #           "streamers": [Streamer_1, Streamer_2, ...],
-    #           "checked_videos": {} # Track video IDs already checked # {streamer.channel_id: set(checked_videos)}
+    #           "checked_videos": {} # Track video IDs already checked # {streamer.channel_id: {"all": set(), "live": set(), "upcoming": set()}}
     #       },
 }
 
@@ -109,7 +108,7 @@ def check_videos_live(video_ids):
     live_videos = [] # (video_id, channel_title, title, link, scheduledStartTime) tuples
     upcoming_videos = [] # (video_id, channel_title, title, link, scheduledStartTime) tuples
     if not video_ids:
-        return live_videos # No videos to check
+        return live_videos, upcoming_videos # No videos to check
     
     url = "https://www.googleapis.com/youtube/v3/videos"
     params = {
@@ -121,108 +120,130 @@ def check_videos_live(video_ids):
     response = requests.get(url, params)
     if response.status_code == 200:
         data = response.json()
+        # print(data) # TODO: Delete
         for item in data.get("items", []):
             snippet = item.get("snippet", {})
+
+            video_id = item["id"]
+            title = item["snippet"]["title"]
+            channel_title = item["snippet"]["channelTitle"]
+            link = f"https://www.youtube.com/watch?v={video_id}"
+            
             if snippet.get("liveBroadcastContent") == "live": # Check if the stream has started
-                video_id = item["id"]
-                title = item["snippet"]["title"]
-                channel_title = item["snippet"]["channelTitle"]
-                link = f"https://www.youtube.com/watch?v={video_id}"
                 # scheduledStartTime = item["liveStreamingDetails"]["scheduledStartTime"] TODO: Find a way to add the scheduled start time here, since it's not in the http response
                 live_videos.append((video_id, channel_title, title, link))
+            
             elif snippet.get("liveBroadcastContent") == "upcoming": # Check if the stream is upcoming
-                video_id = item["id"]
-                title = item["snippet"]["title"]
-                channel_title = item["snippet"]["channelTitle"]
-                link = f"https://www.youtube.com/watch?v={video_id}"
-                scheduledStartTime = item["liveStreamingDetails"]["scheduledStartTime"]
-                upcoming_videos.append((video_id, channel_title, title, link, scheduledStartTime))
+                scheduled_start_time = item.get("liveStreamingDetails", {}).get("scheduledStartTime", "")
+                upcoming_videos.append((video_id, channel_title, title, link, scheduled_start_time))
     else:
         print(f"Error: Unable to fetch video details. Status code: {response.status_code}")
 
-    return (live_videos, upcoming_videos)
+    return live_videos, upcoming_videos
 
 async def check_for_live_streams():
     """Fetch recent videos, check if they are live, and notify Discord."""
     global subscriptions
 
-    for discord_channel_id, data in subscriptions.items(): # 1: {"streamers": ["12345"], "checked_videos": {"12345": set(123, 543, 654)}}
+    for discord_channel_id, data in subscriptions.items(): # 1: {"streamers": ["12345"], "checked_videos": {"12345": "all": set(123, 543, 654), "live": set(123, 543), "upcoming": set()}}
         streamers = data.get("streamers", []) # ["12345"]
-        checked_videos = data.get("checked_videos", {})
-        print(f"initial checked videos for {discord_channel_id}: {checked_videos}") # TODO: Delete
+        checked_videos = data.get("checked_videos", {}) # {streamer.channel_id: {"all": set(), "live": set(), "upcoming": set()}}
+        # print(f"initial checked videos for {discord_channel_id}: {checked_videos}") # TODO: Delete
 
         for streamer in streamers: # "12345" (streamer.channel_id)
             if streamer.channel_id not in checked_videos:
-                checked_videos[streamer.channel_id] = set()
+                checked_videos[streamer.channel_id] = {"all": set(), "live": set(), "upcoming": set()}
                 
+            await recheck_upcoming(streamer, checked_videos, discord_channel_id)
+
             video_ids = fetch_recent_video_ids(streamer.channel_id) # video_ids = [123, 543, 654]
 
-            new_videos = [video for video in video_ids if video not in checked_videos[streamer.channel_id]] # Filter out already-checked videos
-            # new_videos = [123, 543, 654] TODO: Delete
+            new_videos = [video for video in video_ids if video not in checked_videos[streamer.channel_id]["all"]] # Filter out already-checked videos
+            # new_videos = [] TODO: Delete
             if not new_videos:
                 print(f"skipping {streamer.name} because no new videos to check...") # TODO: Delete
                 continue  # Skip if no new videos to check
 
             print(f"new videos detected for {streamer.name}. checking if videos are live...") # TODO: Delete
-            live_videos, upcoming_videos = check_videos_live(new_videos) # live_videos = ["123"]
+            live_videos, upcoming_videos = check_videos_live(new_videos) # live_videos = ["123"], upcoming = ["543"]
 
-            checked_videos[streamer.channel_id].update(new_videos)
+            checked_videos[streamer.channel_id]["all"].update(new_videos) # [123, 543, 654]
+            checked_videos[streamer.channel_id]["live"].update(video[0] for video in live_videos) # [123]
+            checked_videos[streamer.channel_id]["upcoming"].update(video[0] for video in upcoming_videos) # [543]
 
-            await send_embed(live_videos, upcoming_videos, streamer, discord_channel_id)
+            if live_videos:
+                await send_embed(live_videos, streamer, discord_channel_id, "live")
+
+            if upcoming_videos:
+                await send_embed(upcoming_videos, streamer, discord_channel_id, "upcoming")
 
             subscriptions[discord_channel_id]["checked_videos"] = checked_videos
 
         save_subscriptions()
 
-async def send_embed(live_videos, upcoming_videos, streamer, discord_channel_id):
+async def recheck_upcoming(streamer, checked_videos, discord_channel_id):
+    # Re-check videos in the "upcoming" set to see if they are now live
+    upcoming_to_check = list(checked_videos[streamer.channel_id]["upcoming"]) # [543]
+    new_live_videos, new_upcoming_videos = check_videos_live(upcoming_to_check)
+
+    # Remove videos that are now live from the "upcoming" set
+    checked_videos[streamer.channel_id]["upcoming"].difference_update( # []
+        video[0] for video in new_live_videos
+    )
+
+    if new_live_videos:
+        await send_embed(new_live_videos, streamer, discord_channel_id, "live")
+
+async def send_embed(videos, streamer, discord_channel_id, status):
     # for upcoming,
-    for video_id, channel_title, title, link, scheduledStartTime in upcoming_videos:
-        # Notify only the appropriate Discord channels
-        channel = bot.get_channel(discord_channel_id)
-        if channel:
-            embed = discord.Embed(
-                color=discord.Color.blue(),
-                title="UPCOMING on YouTube",
-                url=link,
-                description=title,
-            )
-            embed.set_author(
-                name=channel_title,
-            )
-            embed.set_thumbnail(
-                url=company_icons.get(streamer.company, "")
-            )
-            embed.add_field(name=":clock3: Upcoming", value=f"<t:{int(datetime.strptime(scheduledStartTime, '%Y-%m-%dT%H:%M:%SZ').timestamp())}:t>", inline=True)
-            # embed.add_field(name="Viewers", value=f"{} watching now", inline=True) # TODO: use "concurrentViewers" field in YT API response JSON
-            thumbnail_url = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
-            embed.set_image(url=thumbnail_url)
-            embed.set_footer(text=f"Youtube • <t:{int(datetime.strptime(scheduledStartTime, '%Y-%m-%dT%H:%M:%SZ').timestamp())}:d> <t:{int(datetime.strptime(scheduledStartTime, '%Y-%m-%dT%H:%M:%SZ').timestamp())}:t>")
-            await channel.send(embed=embed)
+    if status == "upcoming":
+        for video_id, channel_title, title, link, scheduled_start_time in videos:
+            # Notify only the appropriate Discord channels
+            channel = bot.get_channel(discord_channel_id)
+            if channel:
+                embed = discord.Embed(
+                    color=discord.Color.blue(),
+                    title="UPCOMING on YouTube",
+                    url=link,
+                    description=title,
+                )
+                embed.set_author(
+                    name=channel_title,
+                )
+                embed.set_thumbnail(
+                    url=company_icons.get(streamer.company, "")
+                )
+                # embed.add_field(name=":clock3: Upcoming", value=f"<t:{int(datetime.strptime(scheduled_start_time, '%Y-%m-%dT%H:%M:%SZ').timestamp())}:t>", inline=True)
+                # embed.add_field(name="Viewers", value=f"{} watching now", inline=True) # TODO: use "concurrentViewers" field in YT API response JSON
+                thumbnail_url = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
+                embed.set_image(url=thumbnail_url)
+                # embed.set_footer(text=f"Youtube • <t:{int(datetime.strptime(scheduled_start_time, '%Y-%m-%dT%H:%M:%SZ').timestamp())}:d> <t:{int(datetime.strptime(scheduled_start_time, '%Y-%m-%dT%H:%M:%SZ').timestamp())}:t>")
+                await channel.send(embed=embed)
 
     # for live,
-    for video_id, channel_title, title, link in live_videos:
-        print(f"notifying about {streamer.name}'s video {title}") # TODO: Delete
-        # Notify only the appropriate Discord channels
-        channel = bot.get_channel(discord_channel_id) # "1"
-        if channel:
-            embed = discord.Embed(
-                color=discord.Color.blue(),
-                title="LIVE on YouTube",
-                url=link,
-                description=title,
-            )
-            embed.set_author(
-                name=channel_title,
-            )
-            embed.set_thumbnail(
-                url=company_icons.get(streamer.company, "")
-            )
-            embed.add_field(name=":clock3: Live", value=f"<t:{int(time.time())}:R>", inline=True)
-            # embed.add_field(name="Viewers", value=f"{} watching now", inline=True) # TODO: use "concurrentViewers" field in YT API response JSON
-            thumbnail_url = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
-            embed.set_image(url=thumbnail_url)
-            # embed.set_footer(text=f"Youtube • <t:{int(datetime.strptime(scheduledStartTime, '%Y-%m-%dT%H:%M:%SZ').timestamp())}:d> <t:{int(datetime.strptime(scheduledStartTime, '%Y-%m-%dT%H:%M:%SZ').timestamp())}:t>")
-            await channel.send(embed=embed)
+    elif status == "live":
+        for video_id, channel_title, title, link in videos:
+            # Notify only the appropriate Discord channels
+            channel = bot.get_channel(discord_channel_id)
+            if channel:
+                embed = discord.Embed(
+                    color=discord.Color.blue(),
+                    title="LIVE on YouTube",
+                    url=link,
+                    description=title,
+                )
+                embed.set_author(
+                    name=channel_title,
+                )
+                embed.set_thumbnail(
+                    url=company_icons.get(streamer.company, "")
+                )
+                embed.add_field(name=":clock3: Live", value=f"<t:{int(time.time())}:R>", inline=True)
+                # embed.add_field(name="Viewers", value=f"{} watching now", inline=True) # TODO: use "concurrentViewers" field in YT API response JSON
+                thumbnail_url = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
+                embed.set_image(url=thumbnail_url)
+                # embed.set_footer(text=f"Youtube • <t:{int(datetime.strptime(scheduledStartTime, '%Y-%m-%dT%H:%M:%SZ').timestamp())}:d> <t:{int(datetime.strptime(scheduledStartTime, '%Y-%m-%dT%H:%M:%SZ').timestamp())}:t>")
+                await channel.send(embed=embed)
 
 def get_channel_name(channel_id: str) -> str:
     """Fetch the channel name from YouTube's RSS feed."""
@@ -250,8 +271,12 @@ def save_subscriptions():
                 k: {
                     "streamers": [{"channel_id": s.channel_id, "name": s.name, "company": s.company} for s in v["streamers"]],
                     "checked_videos": {
-                        streamer_id: list(video_ids)
-                        for streamer_id, video_ids in v.get("checked_videos", {}).items()
+                        streamer_id: {
+                            "all": list(video_sets.get("all", set())),
+                            "live": list(video_sets.get("live", set())),
+                            "upcoming": list(video_sets.get("upcoming", set())),
+                        }
+                        for streamer_id, video_sets in v.get("checked_videos", {}).items()
                     },
                 }
                 for k, v in subscriptions.items()
@@ -269,8 +294,12 @@ def load_subscriptions():
                 int(k): {
                     "streamers": [Streamer(s["channel_id"], s["name"], s.get("company", "indie")) for s in v.get("streamers", [])],
                     "checked_videos": {
-                        streamer_id: set(video_ids)
-                        for streamer_id, video_ids in v.get("checked_videos", {}).items()
+                        streamer_id: {
+                            "all": set(video_sets.get("all", [])),
+                            "live": set(video_sets.get("live", [])),
+                            "upcoming": set(video_sets.get("upcoming", [])),
+                        }
+                        for streamer_id, video_sets in v.get("checked_videos", {}).items()
                     },
                 }
                 for k, v in data.items()
@@ -284,10 +313,13 @@ async def list_subscriptions(interaction: discord.Interaction):
     # View list of subscriptions
     discord_channel_id = interaction.channel_id
     channel_subscriptions = subscriptions.get(discord_channel_id, [])
-    
-    subscription_names = [f"`{streamer.name} ({streamer.channel_id})`" for streamer in channel_subscriptions.get("streamers")]
-    formatted_names = ", ".join(subscription_names) if subscription_names else "No streamers assigned."
-    await interaction.response.send_message(f"✅ This Discord channel is subscribed to notifications for: {formatted_names}")
+
+    if not channel_subscriptions:
+        await interaction.response.send_message(f":warning: This Discord channel has no subscriptions.")
+    else:
+        subscription_names = [f"`{streamer.name} ({streamer.channel_id})`" for streamer in channel_subscriptions.get("streamers")]
+        formatted_names = ", ".join(subscription_names) if subscription_names else ":warning: No streamers assigned."
+        await interaction.response.send_message(f"✅ This Discord channel is subscribed to notifications for: {formatted_names}")
 
 @tree.command(name="subscribe", description="Subscribe a Discord channel to alerts for a streamer")
 async def subscribe_to_channel(interaction: discord.Interaction, streamer_channel_id: str):
@@ -378,8 +410,7 @@ async def list_ids(interaction: discord.Interaction):
     Ninomae Ina'nis: UCMwGHR0BTZuLsmjY_NT5Pwg  
     Gawr Gura: UCoSrY_IQQVpmIRZ9Xf-y93g  
 
-    IRyS: UC8rcEBzJSleTkf_-agPM20g  
-    Ceres Fauna: UCO_aKKYxn4tvrqPjcTzZ6EQ  
+    IRyS: UC8rcEBzJSleTkf_-agPM20g
     Ouro Kronii: UCmbs8T6MWqUHP1tIQvSgKrg  
     Nanashi Mumei: UC3n5uGu18FoCy23ggWWp8tA  
     Hakos Baelz: UCgmPnx-EEeOrZSg5Tiw7ZRQ  
@@ -397,7 +428,7 @@ async def list_ids(interaction: discord.Interaction):
 
     await interaction.response.send_message(embed=embed)
 
-@tasks.loop(minutes=5) # TODO: Change to 3 or 5 minutes when done testing
+@tasks.loop(minute=5) # TODO: Change to 3 or 5 minutes when done testing
 async def periodic_live_stream_check():
     await check_for_live_streams()
 
