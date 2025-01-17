@@ -308,7 +308,7 @@ def load_subscriptions():
         subscriptions = {}
 
 """Discord Bot Functions"""
-@tree.command(name="listsubscriptions", description="List the streamers the Discord channel is subscribed to alerts for")
+@tree.command(name="subscriptions", description="List the streamers the Discord channel is subscribed to alerts for")
 async def list_subscriptions(interaction: discord.Interaction):
     # View list of subscriptions
     discord_channel_id = interaction.channel_id
@@ -383,13 +383,14 @@ async def unsubscribe_from_channel(interaction: discord.Interaction, streamer_ch
 
     save_subscriptions()
 
-@tree.command(name="ids", description="View quick list of streamer channel ids available to subscribe to")
+@tree.command(name="list", description="View quick list of streamer channel ids available to subscribe to")
 async def list_ids(interaction: discord.Interaction):
     embed = discord.Embed(
         color=discord.Color.blue(),
         title="List of channel IDs",
     )
     embed.add_field(name=":rainbow: Nijisanji", value=f"""
+    ```
     Elira Pendora: UCIeSUTOTkF9Hs7q3SGcO-Ow
     Finana Ryugu: UCu-J8uIXuLZh16gG-cT1naw
 
@@ -403,8 +404,10 @@ async def list_ids(interaction: discord.Interaction):
     Maria Marionette: UCwaS8_S7kMiKA3izlTWHbQg
     Fulgur Ovid: UCGhqxhovNfaPBpxfCruy9EA
     Meloco Kyoran: UChKXd7oqD18qiIYBoRIHTlw
+    ```
     """, inline=False)
     embed.add_field(name=":arrow_forward: Hololive", value=f"""
+    ```
     Takanashi Kiara: UCHsx4Hqa-1ORjQTh9TYDhww  
     Mori Calliope: UCL_qhgtOy0dy1Agp8vkySQg  
     Ninomae Ina'nis: UCMwGHR0BTZuLsmjY_NT5Pwg  
@@ -424,6 +427,7 @@ async def list_ids(interaction: discord.Interaction):
     Raora Panthera: UCl69AEx4MdqMZH7Jtsm7Tig  
     Gigi Murin: UCDHABijvPBnJm7F-KlNME3w  
     Cecilia Immergreen: UCvN5h1ShZtc7nly3pezRayg  
+    ```
     """, inline=False)
 
     await interaction.response.send_message(embed=embed)
