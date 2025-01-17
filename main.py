@@ -106,7 +106,7 @@ def fetch_recent_video_ids(channel_id):
 
 def check_videos_live(video_ids):
     """Check if videos are live using the YouTube API."""
-    live_videos = [] # (video_id, channel_title, title, link) tuples
+    live_videos = [] # (video_id, channel_title, title, link, scheduledStartTime) tuples
     upcoming_videos = [] # (video_id, channel_title, title, link, scheduledStartTime) tuples
     if not video_ids:
         return live_videos # No videos to check
@@ -128,7 +128,8 @@ def check_videos_live(video_ids):
                 title = item["snippet"]["title"]
                 channel_title = item["snippet"]["channelTitle"]
                 link = f"https://www.youtube.com/watch?v={video_id}"
-                live_videos.append((video_id, channel_title, title, link))
+                scheduledStartTime = item["liveStreamingDetails"]["scheduledStartTime"]
+                live_videos.append((video_id, channel_title, title, link, scheduledStartTime))
             elif snippet.get("liveBroadcastContent") == "upcoming": # Check if the stream is upcoming
                 video_id = item["id"]
                 title = item["snippet"]["title"]
