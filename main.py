@@ -191,11 +191,11 @@ async def send_embed(live_videos, upcoming_videos, streamer, discord_channel_id)
             embed.set_thumbnail(
                 url=company_icons.get(streamer.company, "")
             )
-            embed.add_field(name=":clock3: Upcoming", value=f"<t:{int(datetime.strptime(scheduledStartTime, "%Y-%m-%dT%H:%M:%SZ").timestamp())}:t>", inline=True)
+            embed.add_field(name=":clock3: Upcoming", value=f"<t:{int(datetime.strptime(scheduledStartTime, '%Y-%m-%dT%H:%M:%SZ').timestamp())}:t>", inline=True)
             # embed.add_field(name="Viewers", value=f"{} watching now", inline=True) # TODO: use "concurrentViewers" field in YT API response JSON
             thumbnail_url = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
             embed.set_image(url=thumbnail_url)
-            embed.set_footer(text=f"Youtube • <t:{int(datetime.strptime(scheduledStartTime, "%Y-%m-%dT%H:%M:%SZ").timestamp())}:d> <t:{int(datetime.strptime(scheduledStartTime, "%Y-%m-%dT%H:%M:%SZ").timestamp())}:t>")
+            embed.set_footer(text=f"Youtube • <t:{int(datetime.strptime(scheduledStartTime, '%Y-%m-%dT%H:%M:%SZ').timestamp())}:d> <t:{int(datetime.strptime(scheduledStartTime, '%Y-%m-%dT%H:%M:%SZ').timestamp())}:t>")
             await channel.send(embed=embed)
 
     # for live,
@@ -220,7 +220,7 @@ async def send_embed(live_videos, upcoming_videos, streamer, discord_channel_id)
             # embed.add_field(name="Viewers", value=f"{} watching now", inline=True) # TODO: use "concurrentViewers" field in YT API response JSON
             thumbnail_url = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
             embed.set_image(url=thumbnail_url)
-            embed.set_footer(text=f"Youtube • <t:{int(datetime.strptime(scheduledStartTime, "%Y-%m-%dT%H:%M:%SZ").timestamp())}:d> <t:{int(datetime.strptime(scheduledStartTime, "%Y-%m-%dT%H:%M:%SZ").timestamp())}:t>")
+            embed.set_footer(text=f"Youtube • <t:{int(datetime.strptime(scheduledStartTime, '%Y-%m-%dT%H:%M:%SZ').timestamp())}:d> <t:{int(datetime.strptime(scheduledStartTime, '%Y-%m-%dT%H:%M:%SZ').timestamp())}:t>")
             await channel.send(embed=embed)
 
 def get_channel_name(channel_id: str) -> str:
