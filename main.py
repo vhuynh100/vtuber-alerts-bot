@@ -121,7 +121,6 @@ def check_videos_live(video_ids):
     response = requests.get(url, params)
     if response.status_code == 200:
         data = response.json()
-        print(data) # TODO: Delete
         for item in data.get("items", []):
             snippet = item.get("snippet", {})
             if snippet.get("liveBroadcastContent") == "live": # Check if the stream has started
