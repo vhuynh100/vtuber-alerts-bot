@@ -428,7 +428,7 @@ async def list_ids(interaction: discord.Interaction):
 
     await interaction.response.send_message(embed=embed)
 
-@tasks.loop(minute=5) # TODO: Change to 3 or 5 minutes when done testing
+@tasks.loop(minutes=5) # TODO: Change to 3 or 5 minutes when done testing
 async def periodic_live_stream_check():
     await check_for_live_streams()
 
