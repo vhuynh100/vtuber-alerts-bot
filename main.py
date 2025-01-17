@@ -121,6 +121,7 @@ def check_videos_live(video_ids):
     response = requests.get(url, params)
     if response.status_code == 200:
         data = response.json()
+        print(data) # TODO: Delete
         for item in data.get("items", []):
             snippet = item.get("snippet", {})
             if snippet.get("liveBroadcastContent") == "live": # Check if the stream has started
@@ -128,8 +129,8 @@ def check_videos_live(video_ids):
                 title = item["snippet"]["title"]
                 channel_title = item["snippet"]["channelTitle"]
                 link = f"https://www.youtube.com/watch?v={video_id}"
-                scheduledStartTime = item["liveStreamingDetails"]["scheduledStartTime"]
-                live_videos.append((video_id, channel_title, title, link, scheduledStartTime))
+                # scheduledStartTime = item["liveStreamingDetails"]["scheduledStartTime"] TODO: Find a way to add the scheduled start time here, since it's not in the http response
+                live_videos.append((video_id, channel_title, title, link))
             elif snippet.get("liveBroadcastContent") == "upcoming": # Check if the stream is upcoming
                 video_id = item["id"]
                 title = item["snippet"]["title"]
@@ -200,7 +201,7 @@ async def send_embed(live_videos, upcoming_videos, streamer, discord_channel_id)
             await channel.send(embed=embed)
 
     # for live,
-    for video_id, channel_title, title, link, scheduledStartTime in live_videos:
+    for video_id, channel_title, title, link in live_videos:
         print(f"notifying about {streamer.name}'s video {title}") # TODO: Delete
         # Notify only the appropriate Discord channels
         channel = bot.get_channel(discord_channel_id) # "1"
@@ -221,7 +222,7 @@ async def send_embed(live_videos, upcoming_videos, streamer, discord_channel_id)
             # embed.add_field(name="Viewers", value=f"{} watching now", inline=True) # TODO: use "concurrentViewers" field in YT API response JSON
             thumbnail_url = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
             embed.set_image(url=thumbnail_url)
-            embed.set_footer(text=f"Youtube • <t:{int(datetime.strptime(scheduledStartTime, '%Y-%m-%dT%H:%M:%SZ').timestamp())}:d> <t:{int(datetime.strptime(scheduledStartTime, '%Y-%m-%dT%H:%M:%SZ').timestamp())}:t>")
+            # embed.set_footer(text=f"Youtube • <t:{int(datetime.strptime(scheduledStartTime, '%Y-%m-%dT%H:%M:%SZ').timestamp())}:d> <t:{int(datetime.strptime(scheduledStartTime, '%Y-%m-%dT%H:%M:%SZ').timestamp())}:t>")
             await channel.send(embed=embed)
 
 def get_channel_name(channel_id: str) -> str:
@@ -397,7 +398,7 @@ async def list_ids(interaction: discord.Interaction):
 
     await interaction.response.send_message(embed=embed)
 
-@tasks.loop(minutes=5) # TODO: Change to 3 or 5 minutes when done testing
+@tasks.loop(seconds=5) # TODO: Change to 3 or 5 minutes when done testing
 async def periodic_live_stream_check():
     await check_for_live_streams()
 
