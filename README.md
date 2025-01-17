@@ -46,14 +46,24 @@ tmux ls
 ```
 
 ## Commands:
-/assign: Assign a streamer to a route.
+/subscribe: Subscribe a Discord channel to a YT channel for alerts.
 ```
-/assign <streamer_channel_id>
+/subscribe <streamer_channel_id>
 ```
 
-/unassign: Remove a streamer from a route.
+/unsubscribe: Remove a YT channel from a Discord channel's notification list.
 ```
-/unassign <streamer_channel_id>
+/unsubscribe <streamer_channel_id>
+```
+
+/subscriptions: List the streamers the Discord channel is subscribed to alerts for
+```
+/subscriptions
+```
+
+/list: View quick list of YT channel ids available to subscribe to.
+```
+/list
 ```
 
 Note: To get a YouTube channel ID,
