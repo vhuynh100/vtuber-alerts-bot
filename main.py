@@ -105,14 +105,14 @@ def fetch_recent_video_ids(channel_id):
 
 def check_videos_live(video_ids):
     """Check if videos are live using the YouTube API."""
-    live_videos = [] # (video_id, channel_title, title, link, scheduledStartTime) tuples
-    upcoming_videos = [] # (video_id, channel_title, title, link, scheduledStartTime) tuples
+    live_videos = [] # (video_id, channel_title, title, link, scheduled_start_time, actual_start_time, concurrent_viewers) tuples
+    upcoming_videos = [] # (video_id, channel_title, title, link, scheduled_start_time) tuples
     if not video_ids:
         return live_videos, upcoming_videos # No videos to check
     
     url = "https://www.googleapis.com/youtube/v3/videos"
     params = {
-        "part": "snippet",
+        "part": "snippet,liveStreamingDetails",
         "id": ",".join(video_ids),  # Comma-separated video IDs
         "key": YOUTUBE_API_KEY,
     }
@@ -123,18 +123,21 @@ def check_videos_live(video_ids):
         # print(data) # TODO: Delete
         for item in data.get("items", []):
             snippet = item.get("snippet", {})
+            live_details = item.get("liveStreamingDetails", {})
 
             video_id = item["id"]
             title = item["snippet"]["title"]
             channel_title = item["snippet"]["channelTitle"]
             link = f"https://www.youtube.com/watch?v={video_id}"
+            scheduled_start_time = live_details.get("scheduledStartTime", "")
             
-            if snippet.get("liveBroadcastContent") == "live": # Check if the stream has started
-                # scheduledStartTime = item["liveStreamingDetails"]["scheduledStartTime"] TODO: Find a way to add the scheduled start time here, since it's not in the http response
-                live_videos.append((video_id, channel_title, title, link))
+            if snippet.get("liveBroadcastContent") == "live": # Check if stream has started
+                actual_start_time = live_details.get("actualStartTime", "")
+                concurrent_viewers = live_details.get("concurrentViewers", "")
+                live_videos.append((video_id, channel_title, title, link, scheduled_start_time, actual_start_time, concurrent_viewers))
             
-            elif snippet.get("liveBroadcastContent") == "upcoming": # Check if the stream is upcoming
-                scheduled_start_time = item.get("liveStreamingDetails", {}).get("scheduledStartTime", "")
+            elif snippet.get("liveBroadcastContent") == "upcoming": # Check if stream is upcoming
+                # scheduled_start_time = item.get("liveStreamingDetails", {}).get("scheduledStartTime", "")
                 upcoming_videos.append((video_id, channel_title, title, link, scheduled_start_time))
     else:
         print(f"Error: Unable to fetch video details. Status code: {response.status_code}")
@@ -195,10 +198,9 @@ async def recheck_upcoming(streamer, checked_videos, discord_channel_id):
         await send_embed(new_live_videos, streamer, discord_channel_id, "live")
 
 async def send_embed(videos, streamer, discord_channel_id, status):
-    # for upcoming,
+    """ Send alert into a specific Discord channel, depending on if the stream is live or upcoming. """
     if status == "upcoming":
         for video_id, channel_title, title, link, scheduled_start_time in videos:
-            # Notify only the appropriate Discord channels
             channel = bot.get_channel(discord_channel_id)
             if channel:
                 embed = discord.Embed(
@@ -208,22 +210,26 @@ async def send_embed(videos, streamer, discord_channel_id, status):
                     description=title,
                 )
                 embed.set_author(
-                    name=channel_title,
+                    name=channel_title, 
                 )
                 embed.set_thumbnail(
                     url=company_icons.get(streamer.company, "")
                 )
+                embed.add_field(name=":clock3: Scheduled", value=f"<t:{int(datetime.strptime(scheduled_start_time, '%Y-%m-%dT%H:%M:%SZ').timestamp())}:d> <t:{int(datetime.strptime(scheduled_start_time, '%Y-%m-%dT%H:%M:%SZ').timestamp())}:t>")
                 # embed.add_field(name=":clock3: Upcoming", value=f"<t:{int(datetime.strptime(scheduled_start_time, '%Y-%m-%dT%H:%M:%SZ').timestamp())}:t>", inline=True)
                 # embed.add_field(name="Viewers", value=f"{} watching now", inline=True) # TODO: use "concurrentViewers" field in YT API response JSON
-                thumbnail_url = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
+                thumbnail_url = f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg"
+                try:
+                    response = requests.head(thumbnail_url)
+                    if response.status_code != 200:
+                        thumbnail_url = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
+                except Exception as e:
+                    thumbnail_url = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
                 embed.set_image(url=thumbnail_url)
-                # embed.set_footer(text=f"Youtube • <t:{int(datetime.strptime(scheduled_start_time, '%Y-%m-%dT%H:%M:%SZ').timestamp())}:d> <t:{int(datetime.strptime(scheduled_start_time, '%Y-%m-%dT%H:%M:%SZ').timestamp())}:t>")
                 await channel.send(embed=embed)
 
-    # for live,
     elif status == "live":
-        for video_id, channel_title, title, link in videos:
-            # Notify only the appropriate Discord channels
+        for video_id, channel_title, title, link, scheduled_start_time, actual_start_time, concurrent_viewers in videos:
             channel = bot.get_channel(discord_channel_id)
             if channel:
                 embed = discord.Embed(
@@ -238,11 +244,25 @@ async def send_embed(videos, streamer, discord_channel_id, status):
                 embed.set_thumbnail(
                     url=company_icons.get(streamer.company, "")
                 )
-                embed.add_field(name=":clock3: Live", value=f"<t:{int(time.time())}:R>", inline=True)
-                # embed.add_field(name="Viewers", value=f"{} watching now", inline=True) # TODO: use "concurrentViewers" field in YT API response JSON
-                thumbnail_url = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
+                embed.add_field(
+                    name=":red_circle: Live", 
+                    value=f"<t:{int(datetime.strptime(actual_start_time, '%Y-%m-%dT%H:%M:%SZ').timestamp())}:R>", 
+                    inline=True
+                )
+                embed.add_field(
+                    name=":clock3: Scheduled", 
+                    value=f"<t:{int(datetime.strptime(scheduled_start_time, '%Y-%m-%dT%H:%M:%SZ').timestamp())}:d> <t:{int(datetime.strptime(scheduled_start_time, '%Y-%m-%dT%H:%M:%SZ').timestamp())}:t>", 
+                    inline=True
+                )
+                embed.add_field(name=":busts_in_silhouette: Viewers", value=f"{int(concurrent_viewers)} watching now", inline=False)
+                thumbnail_url = f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg"
+                try:
+                    response = requests.head(thumbnail_url)
+                    if response.status_code != 200:
+                        thumbnail_url = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
+                except Exception as e:
+                    thumbnail_url = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
                 embed.set_image(url=thumbnail_url)
-                # embed.set_footer(text=f"Youtube • <t:{int(datetime.strptime(scheduledStartTime, '%Y-%m-%dT%H:%M:%SZ').timestamp())}:d> <t:{int(datetime.strptime(scheduledStartTime, '%Y-%m-%dT%H:%M:%SZ').timestamp())}:t>")
                 await channel.send(embed=embed)
 
 def get_channel_name(channel_id: str) -> str:
@@ -424,7 +444,6 @@ async def list_ids(interaction: discord.Interaction):
     Raora Panthera: UCl69AEx4MdqMZH7Jtsm7Tig  
     Gigi Murin: UCDHABijvPBnJm7F-KlNME3w  
     Cecilia Immergreen: UCvN5h1ShZtc7nly3pezRayg  
-    ```
     """, inline=False)
 
     await interaction.response.send_message(embed=embed)
