@@ -383,45 +383,42 @@ async def unsubscribe_from_channel(interaction: discord.Interaction, streamer_ch
 
     save_subscriptions()
 
-@tree.command(name="list", description="View quick list of streamer channel ids available to subscribe to")
+@tree.command(name="list", description="View quick list of YT channel ids available to subscribe to")
 async def list_ids(interaction: discord.Interaction):
     embed = discord.Embed(
         color=discord.Color.blue(),
         title="List of channel IDs",
     )
     embed.add_field(name=":rainbow: Nijisanji", value=f"""
-    ```
     Elira Pendora: UCIeSUTOTkF9Hs7q3SGcO-Ow
     Finana Ryugu: UCu-J8uIXuLZh16gG-cT1naw
 
-    Rosemi Lovelock: UC4WvIIAo89_AzGUh1AZ6Dkg
-    Petra Gurin: UCgA2jKRkqpY_8eysPUs8sjw
+    Rosemi Lovelock: UC4WvIIAo89\\_AzGUh1AZ6Dkg
+    Petra Gurin: UCgA2jKRkqpY\\_8eysPUs8sjw
 
     Enna Alouette: UCR6qhsLpn62WVxCBK1dkLow
     Millie Parfait: UC47rNmkDcNgbOcM-2BwzJTQ
     Reimu Endou: UCBURM8S4LH7cRZ0Clea9RDA
     
-    Maria Marionette: UCwaS8_S7kMiKA3izlTWHbQg
+    Maria Marionette: UCwaS8\\_S7kMiKA3izlTWHbQg
     Fulgur Ovid: UCGhqxhovNfaPBpxfCruy9EA
     Meloco Kyoran: UChKXd7oqD18qiIYBoRIHTlw
-    ```
     """, inline=False)
     embed.add_field(name=":arrow_forward: Hololive", value=f"""
-    ```
     Takanashi Kiara: UCHsx4Hqa-1ORjQTh9TYDhww  
-    Mori Calliope: UCL_qhgtOy0dy1Agp8vkySQg  
-    Ninomae Ina'nis: UCMwGHR0BTZuLsmjY_NT5Pwg  
-    Gawr Gura: UCoSrY_IQQVpmIRZ9Xf-y93g  
+    Mori Calliope: UCL\\_qhgtOy0dy1Agp8vkySQg  
+    Ninomae Ina'nis: UCMwGHR0BTZuLsmjY\\_NT5Pwg  
+    Gawr Gura: UCoSrY\\_IQQVpmIRZ9Xf-y93g  
 
-    IRyS: UC8rcEBzJSleTkf_-agPM20g
+    IRyS: UC8rcEBzJSleTkf\\_-agPM20g
     Ouro Kronii: UCmbs8T6MWqUHP1tIQvSgKrg  
     Nanashi Mumei: UC3n5uGu18FoCy23ggWWp8tA  
     Hakos Baelz: UCgmPnx-EEeOrZSg5Tiw7ZRQ  
 
     Shiori Novella: UCgnfPPb9JI3e9A4cXHnWbyg  
-    Koseki Bijou: UC9p_lqQ0FEDz327Vgf5JwqA  
-    Nerissa Ravencroft: UC_sFNM0z0MWm9A6WlKPuMMg  
-    FUWAMOCO: UCt9H_RpQzhxzlyBxFqrdHqA  
+    Koseki Bijou: UC9p\\_lqQ0FEDz327Vgf5JwqA  
+    Nerissa Ravencroft: UC\\_sFNM0z0MWm9A6WlKPuMMg  
+    FUWAMOCO: UCt9H\\_RpQzhxzlyBxFqrdHqA  
 
     Elizabeth Rose Bloodflame: UCW5uhrG1eCBYditmhL0Ykjw  
     Raora Panthera: UCl69AEx4MdqMZH7Jtsm7Tig  
