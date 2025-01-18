@@ -5,7 +5,6 @@ from discord.ext import commands, tasks
 from dotenv import load_dotenv
 import requests
 import xml.etree.ElementTree as ET
-import time
 import json
 from datetime import datetime
 
@@ -215,7 +214,10 @@ async def send_embed(videos, streamer, discord_channel_id, status):
                 embed.set_thumbnail(
                     url=company_icons.get(streamer.company, "")
                 )
-                embed.add_field(name=":clock3: Scheduled", value=f"<t:{int(datetime.strptime(scheduled_start_time, '%Y-%m-%dT%H:%M:%SZ').timestamp())}:d> <t:{int(datetime.strptime(scheduled_start_time, '%Y-%m-%dT%H:%M:%SZ').timestamp())}:t>")
+                embed.add_field(
+                    name=":clock3: Scheduled", 
+                    value=f"<t:{int(datetime.fromisoformat(scheduled_start_time.replace("Z", "+00:00")).timestamp())}:d> <t:{int(datetime.fromisoformat(scheduled_start_time.replace("Z", "+00:00")).timestamp())}:t>", 
+                )
                 # embed.add_field(name=":clock3: Upcoming", value=f"<t:{int(datetime.strptime(scheduled_start_time, '%Y-%m-%dT%H:%M:%SZ').timestamp())}:t>", inline=True)
                 # embed.add_field(name="Viewers", value=f"{} watching now", inline=True) # TODO: use "concurrentViewers" field in YT API response JSON
                 thumbnail_url = f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg"
@@ -246,12 +248,12 @@ async def send_embed(videos, streamer, discord_channel_id, status):
                 )
                 embed.add_field(
                     name=":red_circle: Live", 
-                    value=f"<t:{int(datetime.strptime(actual_start_time, '%Y-%m-%dT%H:%M:%SZ').timestamp())}:R>", 
+                    value=f"<t:{int(datetime.fromisoformat(actual_start_time.replace("Z", "+00:00")).timestamp())}:R>", 
                     inline=True
                 )
                 embed.add_field(
                     name=":clock3: Scheduled", 
-                    value=f"<t:{int(datetime.strptime(scheduled_start_time, '%Y-%m-%dT%H:%M:%SZ').timestamp())}:d> <t:{int(datetime.strptime(scheduled_start_time, '%Y-%m-%dT%H:%M:%SZ').timestamp())}:t>", 
+                    value=f"<t:{int(datetime.fromisoformat(scheduled_start_time.replace("Z", "+00:00")).timestamp())}:d> <t:{int(datetime.fromisoformat(scheduled_start_time.replace("Z", "+00:00")).timestamp())}:t>", 
                     inline=True
                 )
                 embed.add_field(name=":busts_in_silhouette: Viewers", value=f"{int(concurrent_viewers)} watching now", inline=False)
