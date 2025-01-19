@@ -313,6 +313,7 @@ def save_subscriptions():
                         }
                         for streamer_id, video_sets in v.get("checked_videos", {}).items()
                     },
+                    "mention": v.get("mention").id if v.get("mention") else None,
                 }
                 for k, v in subscriptions.items()
             },
@@ -336,6 +337,7 @@ def load_subscriptions():
                         }
                         for streamer_id, video_sets in v.get("checked_videos", {}).items()
                     },
+                    "mention": bot.get_role(v.get("mention")) if v.get("mention") else None,
                 }
                 for k, v in data.items()
             }
