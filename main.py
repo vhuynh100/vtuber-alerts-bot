@@ -358,7 +358,7 @@ async def list_subscriptions(interaction: discord.Interaction):
         formatted_names = ", ".join(subscription_names) if subscription_names else ":warning: No streamers assigned."
         await interaction.response.send_message(f"✅ This Discord channel is subscribed to notifications for: {formatted_names}")
 
-@tree.command(name="subscribe", description="Subscribe a Discord channel to alerts for a streamer. Optionally, include a role to be mentioned on alert.")
+@tree.command(name="subscribe", description="Subscribe a Discord channel to alerts for a streamer.")
 async def subscribe_to_channel(interaction: discord.Interaction, streamer_channel_id: str, mention: discord.Role = None):
     """ Add a YouTube channel ID to this Discord channel's notification list. """
     # 2 options: channel (string: channel), mention (string: role or "None")
