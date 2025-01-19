@@ -227,7 +227,7 @@ async def send_embed(videos, streamer, discord_channel_id, status):
                 )
                 embed.add_field(
                     name=":clock3: Scheduled", 
-                    value=f"<t:{int(datetime.fromisoformat(scheduled_start_time.replace("Z", "+00:00")).timestamp())}:d> <t:{int(datetime.fromisoformat(scheduled_start_time.replace("Z", "+00:00")).timestamp())}:t>", 
+                    value=f"<t:{int(datetime.fromisoformat(scheduled_start_time.replace('Z', '+00:00')).timestamp())}:d> <t:{int(datetime.fromisoformat(scheduled_start_time.replace('Z', '+00:00')).timestamp())}:t>", 
                 )
                 # embed.add_field(name=":clock3: Upcoming", value=f"<t:{int(datetime.strptime(scheduled_start_time, '%Y-%m-%dT%H:%M:%SZ').timestamp())}:t>", inline=True)
                 # embed.add_field(name="Viewers", value=f"{} watching now", inline=True) # TODO: use "concurrentViewers" field in YT API response JSON
@@ -259,12 +259,12 @@ async def send_embed(videos, streamer, discord_channel_id, status):
                 )
                 embed.add_field(
                     name=":red_circle: Live", 
-                    value=f"<t:{int(datetime.fromisoformat(actual_start_time.replace("Z", "+00:00")).timestamp())}:R>", 
+                    value=f"<t:{int(datetime.fromisoformat(actual_start_time.replace('Z', '+00:00')).timestamp())}:R>", 
                     inline=True
                 )
                 embed.add_field(
                     name=":clock3: Scheduled", 
-                    value=f"<t:{int(datetime.fromisoformat(scheduled_start_time.replace("Z", "+00:00")).timestamp())}:d> <t:{int(datetime.fromisoformat(scheduled_start_time.replace("Z", "+00:00")).timestamp())}:t>", 
+                    value=f"<t:{int(datetime.fromisoformat(scheduled_start_time.replace('Z', '+00:00')).timestamp())}:d> <t:{int(datetime.fromisoformat(scheduled_start_time.replace('Z', '+00:00')).timestamp())}:t>", 
                     inline=True
                 )
                 embed.add_field(name=":busts_in_silhouette: Viewers", value=f"{int(concurrent_viewers)} watching now", inline=False)
