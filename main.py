@@ -169,7 +169,7 @@ async def check_for_live_streams():
             if streamer.channel_id not in checked_videos:
                 checked_videos[streamer.channel_id] = {"all": set(), "live": set(), "upcoming": set()}
                 
-            await recheck_upcoming(streamer, checked_videos, discord_channel_id)
+            await recheck_upcoming(streamer, checked_videos, discord_channel_id, mention)
 
             video_ids = fetch_recent_video_ids(streamer.channel_id) # video_ids = [123, 543, 654]
 
@@ -196,7 +196,7 @@ async def check_for_live_streams():
 
         save_subscriptions()
 
-async def recheck_upcoming(streamer, checked_videos, discord_channel_id):
+async def recheck_upcoming(streamer, checked_videos, discord_channel_id, mention):
     # Re-check videos in the "upcoming" set to see if they are now live
     upcoming_to_check = list(checked_videos[streamer.channel_id]["upcoming"]) # [543]
     new_live_videos, new_upcoming_videos = check_videos_live(upcoming_to_check)
@@ -207,7 +207,7 @@ async def recheck_upcoming(streamer, checked_videos, discord_channel_id):
     )
 
     if new_live_videos:
-        await send_embed(new_live_videos, streamer, discord_channel_id, "live")
+        await send_embed(new_live_videos, streamer, discord_channel_id, mention, "live")
 
 async def send_embed(videos, streamer, discord_channel_id, mention: discord.Role, status):
     """ Send alert into a specific Discord channel, depending on if the stream is live or upcoming. """
