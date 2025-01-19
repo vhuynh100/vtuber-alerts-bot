@@ -345,7 +345,7 @@ def load_subscriptions():
         subscriptions = {}
 
 """Discord Bot Functions"""
-@tree.command(name="subscriptions", description="List the streamers the Discord channel is subscribed to alerts for")
+@tree.command(name="alerts", description="List the streamers the Discord channel is subscribed to alerts for")
 async def list_subscriptions(interaction: discord.Interaction):
     # View list of subscriptions
     discord_channel_id = interaction.channel_id
@@ -358,7 +358,7 @@ async def list_subscriptions(interaction: discord.Interaction):
         formatted_names = ", ".join(subscription_names) if subscription_names else ":warning: No streamers assigned."
         await interaction.response.send_message(f"✅ This Discord channel is subscribed to notifications for: {formatted_names}")
 
-@tree.command(name="subscribe", description="Subscribe a Discord channel to alerts for a streamer")
+@tree.command(name="subscribe", description="Subscribe a Discord channel to alerts for a streamer. Optionally, include a role to be mentioned on alert.")
 async def subscribe_to_channel(interaction: discord.Interaction, streamer_channel_id: str, mention: discord.Role = None):
     """ Add a YouTube channel ID to this Discord channel's notification list. """
     # 2 options: channel (string: channel), mention (string: role or "None")
@@ -395,7 +395,7 @@ async def subscribe_to_channel(interaction: discord.Interaction, streamer_channe
 
     save_subscriptions()
 
-@tree.command(name="unsubscribe", description="Remove a streamer from a Discord channel")
+@tree.command(name="unsubscribe", description="Remove a YT channel from a Discord channel's notification list.")
 async def unsubscribe_from_channel(interaction: discord.Interaction, streamer_channel_id: str):
     """ Remove a YouTube channel ID from this Discord channel's notification list. """
     global subscriptions
@@ -424,7 +424,7 @@ async def unsubscribe_from_channel(interaction: discord.Interaction, streamer_ch
 
     save_subscriptions()
 
-@tree.command(name="list", description="View quick list of YT channel ids available to subscribe to")
+@tree.command(name="quicklist", description="View a quick list of YT channel ids available to subscribe to.")
 async def list_ids(interaction: discord.Interaction):
     embed = discord.Embed(
         color=discord.Color.blue(),

@@ -1,6 +1,6 @@
 # VTuber Alerts Bot
 
-Discord bot that sends alerts to a specified channel when a streamer goes live. Discord channels can subscribe to user-specified streamers and will only receive notifications for those streamers. These are called "routes."
+Discord bot that sends alerts to a specified Discord channel when a YouTube streamer goes live. Discord channels can subscribe to user-specified streamers and will only receive notifications for those streamers.
 
 ### Prerequisites:
 Python 3.11 or 3.12
@@ -46,9 +46,9 @@ tmux ls
 ```
 
 ## Commands:
-/subscribe: Subscribe a Discord channel to a YT channel for alerts.
+/subscribe: Subscribe a Discord channel to alerts for a streamer. Optionally, include a role to be mentioned on alert.
 ```
-/subscribe <streamer_channel_id>
+/subscribe <streamer_channel_id> <(optional) mention>
 ```
 
 /unsubscribe: Remove a YT channel from a Discord channel's notification list.
@@ -56,14 +56,14 @@ tmux ls
 /unsubscribe <streamer_channel_id>
 ```
 
-/subscriptions: List the streamers the Discord channel is subscribed to alerts for
+/alerts: List the streamers the Discord channel is subscribed to alerts for
 ```
-/subscriptions
+/alerts
 ```
 
-/list: View quick list of YT channel ids available to subscribe to.
+/quicklist: View a quick list of YT channel ids available to subscribe to.
 ```
-/list
+/quicklist
 ```
 
 Note: To get a YouTube channel ID,
