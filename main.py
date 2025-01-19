@@ -79,6 +79,17 @@ class Streamer:
         self.name = name
         self.company = company
 
+    def __eq__(self, other): 
+        if not isinstance(other, Streamer):
+            # don't attempt to compare against unrelated types
+            return NotImplemented
+
+        return self.channel_id == other.channel_id
+    
+    def __hash__(self):
+        # necessary for instances to behave sanely in dicts and sets.
+        return hash(self.channel_id)
+
 subscriptions = {
     #       discord_channel_id_1:
     #       {
