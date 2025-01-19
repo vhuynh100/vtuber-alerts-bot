@@ -403,12 +403,14 @@ async def unsubscribe_from_channel(interaction: discord.Interaction, streamer_ch
 
     data = subscriptions[discord_channel_id]
     streamers = data.get("streamers", [])
+    checked_videos = data.get("checked_videos", {})
 
     for streamer in streamers:
         if streamer.channel_id == streamer_channel_id:
             streamers.remove(streamer)
+            del checked_videos[streamer.channel_id]
             await interaction.response.send_message(f"✅ Unsubscribed from notifications for `{streamer_name} ({streamer_channel_id})` in this Discord channel.")
-            if subscriptions[discord_channel_id] == []:
+            if not subscriptions[discord_channel_id]["streamers"] and not subscriptions[discord_channel_id]["checked_videos"]:
                 del subscriptions[discord_channel_id]
             break
     else:
