@@ -326,8 +326,13 @@ def load_subscriptions():
     try:
         with open("subscriptions.json", "r") as f:
             data = json.load(f)
-            subscriptions = {
-                int(k): {
+            subscriptions = {}
+
+            for k, v in data.items():
+                guild_id = int(k)
+                guild = bot.get_guild(guild_id)
+
+                subscriptions[guild_id] = {
                     "streamers": [Streamer(s["channel_id"], s["name"], s.get("company", "indie")) for s in v.get("streamers", [])],
                     "checked_videos": {
                         streamer_id: {
@@ -337,10 +342,8 @@ def load_subscriptions():
                         }
                         for streamer_id, video_sets in v.get("checked_videos", {}).items()
                     },
-                    "mention": bot.get_role(v.get("mention")) if v.get("mention") else None,
+                    "mention": guild.get_role(v.get("mention")) if v.get("mention") else None,
                 }
-                for k, v in data.items()
-            }
     except FileNotFoundError:
         subscriptions = {}
 
