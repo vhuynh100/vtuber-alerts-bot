@@ -329,10 +329,11 @@ def load_subscriptions():
             subscriptions = {}
 
             for k, v in data.items():
-                guild_id = int(k)
-                guild = bot.get_guild(guild_id)
+                discord_channel_id = int(k)
+                discord_channel = bot.get_channel(discord_channel_id)
+                guild = discord_channel.guild
 
-                subscriptions[guild_id] = {
+                subscriptions[discord_channel_id] = {
                     "streamers": [Streamer(s["channel_id"], s["name"], s.get("company", "indie")) for s in v.get("streamers", [])],
                     "checked_videos": {
                         streamer_id: {
