@@ -469,6 +469,47 @@ async def list_ids(interaction: discord.Interaction):
 
     await interaction.response.send_message(embed=embed)
 
+@tree.command(name="setuproles", description="View a quick list of YT channel ids available to subscribe to.")
+async def message_setup(interaction: discord.Interaction, message_id: str = None):
+    # call cmd
+    # next message becomes the reaction msg
+    if not message_id:
+        await interaction.response.send_message("Please provide the message ID or link to set up reactions.")
+        message_id = await bot.wait_for("message", timeout=60)
+
+    try:
+        channel = interaction.channel
+        target_message = await channel.fetch_message(int(message_id.content))
+    except Exception as e:
+        await interaction.response.send_message(f"Failed to fetch message: {e}")
+        return
+
+    await interaction.response.send_message("Send emoji-role pairs in the format: `emoji: Role1, emoji: Role2`.")
+    role_message = await bot.wait_for("message", timeout=60)
+
+    # input reaction/mention pairs
+    try:
+        role_reactions = {}
+        for pair in role_message.content.split(","):
+            emoji, role_name = pair.split(":")
+            role = discord.utils.get(interaction.guild.roles, name=role_name.strip())
+            if role:
+                role_reactions[emoji.strip()] = role.id
+    except Exception as e:
+        await interaction.response.send_message(f"Error parsing roles: {e}")
+        return
+    
+    # add reactions to the message
+    for emoji in role_reactions.keys():
+        await target_message.add_reaction(emoji)
+
+    # update roles on reactions
+    await interaction.response.send_message(content="Please provide the message that will have reactions.", ephemeral=True)
+    
+    # persist roles
+    # save_role_reactions(target_message.id, role_reactions)
+    await interaction.response.send_message("Reactions added! Users can now interact to assign roles.")
+
 @tasks.loop(minutes=5) # TODO: Change to 3 or 5 minutes when done testing
 async def periodic_live_stream_check():
     await check_for_live_streams()
