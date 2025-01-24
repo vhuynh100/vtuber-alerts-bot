@@ -478,41 +478,40 @@ async def message_setup(interaction: discord.Interaction, message_id: str = None
     # call cmd
     # next message becomes the reaction msg
     if not message_id:
-        await interaction.response.send_message("Please provide the message ID or link to set up reactions.")
+        await interaction.response.send_message("Please provide the message ID or link to set up reactions.", ephemeral=True)
         message_id = await bot.wait_for("message", timeout=60)
 
     try:
         channel = interaction.channel
-        target_message = await channel.fetch_message(int(message_id.content))
+        target_message = await channel.fetch_message(int(message_id))
     except Exception as e:
         await interaction.response.send_message(f"Failed to fetch message: {e}")
         return
 
-    await interaction.response.send_message("Send emoji-role pairs in the format: `emoji: Role1, emoji: Role2`.")
+    await interaction.response.send_message("Send emoji-role pairs in the format: `emoji: Role1, emoji: Role2`.", ephemeral=True)
     role_message = await bot.wait_for("message", timeout=60)
 
     # input reaction/mention pairs
     try:
         role_reactions = {}
         for pair in role_message.content.split(","):
-            emoji, role_name = pair.split(":")
-            role = discord.utils.get(interaction.guild.roles, name=role_name.strip())
+            emoji, role = pair.split(" ")
             if role:
-                role_reactions[emoji.strip()] = role.id
+                role_reactions[emoji.strip()] = role
     except Exception as e:
-        await interaction.response.send_message(f"Error parsing roles: {e}")
+        await interaction.followup.send(f"Error parsing roles: {e}", ephemeral=True)
         return
-    
+
     # add reactions to the message
     for emoji in role_reactions.keys():
         await target_message.add_reaction(emoji)
-
-    # update roles on reactions
-    await interaction.response.send_message(content="Please provide the message that will have reactions.", ephemeral=True)
     
     # persist roles
     # save_role_reactions(target_message.id, role_reactions)
-    await interaction.response.send_message("Reactions added! Users can now interact to assign roles.")
+    await interaction.followup.send("Reactions added! Users can now interact to assign roles.", ephemeral=True)
+
+# def update_role():
+
 
 @tasks.loop(minutes=5) # TODO: Change to 3 or 5 minutes when done testing
 async def periodic_live_stream_check():
