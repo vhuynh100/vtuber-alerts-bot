@@ -502,8 +502,10 @@ async def message_setup(interaction: discord.Interaction, message_id: str):
         if message_int not in reaction_roles:
             reaction_roles[message_int] = {}
 
-        for pair in role_message.content.split(","):
-            emoji, role = pair.split(" ")
+        pairs = role_message.content.split(",")
+
+        for pair in pairs:
+            emoji, role = pair.strip().split(" ")
             role_id = int(role.strip("<@&>"))
             if role:
                 reaction_roles[message_int][emoji.strip()] = role_id
