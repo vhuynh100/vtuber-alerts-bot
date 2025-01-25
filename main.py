@@ -523,6 +523,9 @@ async def message_setup(interaction: discord.Interaction, message_id: str):
 @bot.event
 async def on_raw_reaction_add(payload):
     """Assign roles when a reaction is added."""
+    if payload.user_id == bot.user.id:
+        return
+    
     if payload.message_id in reaction_roles:
         guild = bot.get_guild(payload.guild_id)
         if guild is None:
