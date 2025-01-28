@@ -614,6 +614,13 @@ async def on_raw_reaction_remove(payload):
 
         save_reaction_roles()
 
+@bot.event
+async def on_raw_message_delete(payload):
+    message_id = payload.message_id
+    if message_id in reaction_roles:
+        del reaction_roles[message_id]
+        save_reaction_roles()
+
 @tasks.loop(minutes=5) # TODO: Change to 3 or 5 minutes when done testing
 async def periodic_live_stream_check():
     await check_for_live_streams()
