@@ -74,10 +74,11 @@ bot = discord.Client(intents=intents)
 tree = discord.app_commands.CommandTree(bot) # Initialize CommandTree for slash commands
 
 class Streamer:
-    def __init__(self, channel_id, name, company):
+    def __init__(self, channel_id, name, company, mention):
         self.channel_id = channel_id
         self.name = name
         self.company = company
+        self.mention = mention
 
     def __eq__(self, other): 
         if not isinstance(other, Streamer):
@@ -95,7 +96,6 @@ subscriptions = {
     #       {
     #           "streamers": [Streamer_1, Streamer_2, ...],
     #           "checked_videos": {} # Track video IDs already checked # {streamer.channel_id: {"all": set(), "live": set(), "upcoming": set()}}
-    #           "mention": discord.Role # (optional)
     #       },
 }
 
@@ -170,14 +170,13 @@ async def check_for_live_streams():
     for discord_channel_id, data in subscriptions.items(): # 1: {"streamers": ["12345"], "checked_videos": {"12345": "all": set(123, 543, 654), "live": set(123, 543), "upcoming": set()}}
         streamers = data.get("streamers", []) # ["12345"]
         checked_videos = data.get("checked_videos", {}) # {streamer.channel_id: {"all": set(), "live": set(), "upcoming": set()}}
-        mention = data.get("mention", None)
         # print(f"initial checked videos for {discord_channel_id}: {checked_videos}") # TODO: Delete
 
         for streamer in streamers: # "12345" (streamer.channel_id)
             if streamer.channel_id not in checked_videos:
                 checked_videos[streamer.channel_id] = {"all": set(), "live": set(), "upcoming": set()}
                 
-            await recheck_upcoming(streamer, checked_videos, discord_channel_id, mention)
+            await recheck_upcoming(streamer, checked_videos, discord_channel_id)
 
             video_ids = fetch_recent_video_ids(streamer.channel_id) # video_ids = [123, 543, 654]
 
@@ -195,16 +194,16 @@ async def check_for_live_streams():
             checked_videos[streamer.channel_id]["upcoming"].update(video[0] for video in upcoming_videos) # [543]
 
             if live_videos:
-                await send_embed(live_videos, streamer, discord_channel_id, mention, "live")
+                await send_embed(live_videos, streamer, discord_channel_id, "live")
 
             if upcoming_videos:
-                await send_embed(upcoming_videos, streamer, discord_channel_id, mention, "upcoming")
+                await send_embed(upcoming_videos, streamer, discord_channel_id, "upcoming")
 
             subscriptions[discord_channel_id]["checked_videos"] = checked_videos
 
         save_subscriptions()
 
-async def recheck_upcoming(streamer, checked_videos, discord_channel_id, mention):
+async def recheck_upcoming(streamer, checked_videos, discord_channel_id):
     # Re-check videos in the "upcoming" set to see if they are now live
     upcoming_to_check = list(checked_videos[streamer.channel_id]["upcoming"]) # [543]
     new_live_videos, new_upcoming_videos = check_videos_live(upcoming_to_check)
@@ -215,16 +214,16 @@ async def recheck_upcoming(streamer, checked_videos, discord_channel_id, mention
     )
 
     if new_live_videos:
-        await send_embed(new_live_videos, streamer, discord_channel_id, mention, "live")
+        await send_embed(new_live_videos, streamer, discord_channel_id, "live")
 
-async def send_embed(videos, streamer, discord_channel_id, mention: discord.Role, status):
+async def send_embed(videos, streamer, discord_channel_id, status):
     """ Send alert into a specific Discord channel, depending on if the stream is live or upcoming. """
     if status == "upcoming":
         for video_id, channel_title, title, link, scheduled_start_time in videos:
             channel = bot.get_channel(discord_channel_id)
             if channel:
                 embed = discord.Embed(
-                    color=mention.color if mention.color.value != 0 else discord.Color.blue(),
+                    color=streamer.mention.color if streamer.mention and streamer.mention.color.value != 0 else discord.Color.blue(),
                     title="UPCOMING on YouTube",
                     url=link,
                     description=title,
@@ -249,14 +248,18 @@ async def send_embed(videos, streamer, discord_channel_id, mention: discord.Role
                 except Exception as e:
                     thumbnail_url = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
                 embed.set_image(url=thumbnail_url)
-                await channel.send(content=mention.mention, embed=embed)
+                if streamer.mention:
+                    mention_to_send = streamer.mention.mention
+                else:
+                    mention_to_send = ""
+                await channel.send(content=mention_to_send, embed=embed)
 
     elif status == "live":
         for video_id, channel_title, title, link, scheduled_start_time, actual_start_time, concurrent_viewers in videos:
             channel = bot.get_channel(discord_channel_id)
             if channel:
                 embed = discord.Embed(
-                    color=mention.color if mention.color.value != 0 else discord.Color.brand_red(),
+                    color=streamer.mention.color if streamer.mention and streamer.mention.color.value != 0 else discord.Color.brand_red(),
                     title="LIVE on YouTube",
                     url=link,
                     description=title,
@@ -286,7 +289,11 @@ async def send_embed(videos, streamer, discord_channel_id, mention: discord.Role
                 except Exception as e:
                     thumbnail_url = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
                 embed.set_image(url=thumbnail_url)
-                await channel.send(content=mention.mention, embed=embed)
+                if streamer.mention:
+                    mention_to_send = streamer.mention.mention
+                else:
+                    mention_to_send = ""
+                await channel.send(content=mention_to_send, embed=embed)
 
 def get_channel_name(channel_id: str) -> str:
     """Fetch the channel name from YouTube's RSS feed."""
@@ -312,7 +319,7 @@ def save_subscriptions():
         json.dump(
             {
                 k: {
-                    "streamers": [{"channel_id": s.channel_id, "name": s.name, "company": s.company} for s in v["streamers"]],
+                    "streamers": [{"channel_id": s.channel_id, "name": s.name, "company": s.company, "mention": s.mention.id if s.mention else None} for s in v["streamers"]],
                     "checked_videos": {
                         streamer_id: {
                             "all": list(video_sets.get("all", set())),
@@ -321,7 +328,6 @@ def save_subscriptions():
                         }
                         for streamer_id, video_sets in v.get("checked_videos", {}).items()
                     },
-                    "mention": v.get("mention").id if v.get("mention") else None,
                 }
                 for k, v in subscriptions.items()
             },
@@ -342,7 +348,15 @@ def load_subscriptions():
                 guild = discord_channel.guild
 
                 subscriptions[discord_channel_id] = {
-                    "streamers": [Streamer(s["channel_id"], s["name"], s.get("company", "indie")) for s in v.get("streamers", [])],
+                    "streamers": [
+                        Streamer(
+                            s["channel_id"], 
+                            s["name"], 
+                            s.get("company", "indie"), 
+                            mention=guild.get_role(s["mention"]) if guild and s.get("mention") else None
+                        ) 
+                        for s in v.get("streamers", [])
+                    ],
                     "checked_videos": {
                         streamer_id: {
                             "all": set(video_sets.get("all", [])),
@@ -351,7 +365,6 @@ def load_subscriptions():
                         }
                         for streamer_id, video_sets in v.get("checked_videos", {}).items()
                     },
-                    "mention": guild.get_role(v.get("mention")) if v.get("mention") else None,
                 }
     except FileNotFoundError:
         subscriptions = {}
@@ -424,14 +437,12 @@ async def subscribe_to_channel(interaction: discord.Interaction, streamer_channe
         subscriptions[discord_channel_id] = {
             "streamers": [],
             "checked_videos": {},
-            "mention": None
         }
 
-    streamer_to_assign = Streamer(streamer_channel_id, streamer_name, streamer_company)
+    streamer_to_assign = Streamer(streamer_channel_id, streamer_name, streamer_company, mention)
 
     if streamer_to_assign not in subscriptions[discord_channel_id]["streamers"]:
         subscriptions[discord_channel_id]["streamers"].append(streamer_to_assign)
-        subscriptions[discord_channel_id]["mention"] = mention
         await interaction.response.send_message(f"✅ Subscribed to notifications for `{streamer_to_assign.name} ({streamer_to_assign.channel_id})` in this Discord channel.")
     else:
         await interaction.response.send_message(f"⚠️ This channel is already subscribed to notifications for `{streamer_to_assign.name} ({streamer_to_assign.channel_id})`.")
@@ -621,7 +632,7 @@ async def on_raw_message_delete(payload):
         del reaction_roles[message_id]
         save_reaction_roles()
 
-@tasks.loop(minutes=5) # TODO: Change to 3 or 5 minutes when done testing
+@tasks.loop(seconds=5) # TODO: Change to 3 or 5 minutes when done testing
 async def periodic_live_stream_check():
     await check_for_live_streams()
 
