@@ -66,6 +66,11 @@ tmux ls
 /quicklist
 ```
 
+/setuproles: Set up reaction roles so user can add/remove reactions to self-assign roles.
+```
+/setuproles <message_id>
+```
+
 Note: To get a YouTube channel ID,
 1. Right click YouTube channel
 2. Click "View Page Source"
