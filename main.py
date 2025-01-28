@@ -512,7 +512,7 @@ async def list_ids(interaction: discord.Interaction):
 
     await interaction.response.send_message(embed=embed)
 
-@tree.command(name="setuproles", description="View a quick list of YT channel ids available to subscribe to.")
+@tree.command(name="setuproles", description="Set up reaction roles so user can add/remove reactions to self-assign roles.")
 async def message_setup(interaction: discord.Interaction, message_id: str):
     if not message_id:
         await interaction.response.send_message("Please provide the message ID or link to set up reactions.", ephemeral=True)
