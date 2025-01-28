@@ -99,6 +99,14 @@ subscriptions = {
     #       },
 }
 
+reaction_roles = {
+    # message_id: 
+    # {
+    #     emoji: role,
+    #     emoji: role,
+    # },
+}
+
 def fetch_recent_video_ids(channel_id):
     """Fetch recent video IDs from a YouTube channel's RSS feed."""
     video_ids = []
@@ -326,8 +334,14 @@ def load_subscriptions():
     try:
         with open("subscriptions.json", "r") as f:
             data = json.load(f)
-            subscriptions = {
-                int(k): {
+            subscriptions = {}
+
+            for k, v in data.items():
+                discord_channel_id = int(k)
+                discord_channel = bot.get_channel(discord_channel_id)
+                guild = discord_channel.guild
+
+                subscriptions[discord_channel_id] = {
                     "streamers": [Streamer(s["channel_id"], s["name"], s.get("company", "indie")) for s in v.get("streamers", [])],
                     "checked_videos": {
                         streamer_id: {
@@ -337,12 +351,41 @@ def load_subscriptions():
                         }
                         for streamer_id, video_sets in v.get("checked_videos", {}).items()
                     },
-                    "mention": bot.get_role(v.get("mention")) if v.get("mention") else None,
+                    "mention": guild.get_role(v.get("mention")) if v.get("mention") else None,
+                }
+    except FileNotFoundError:
+        subscriptions = {}
+
+def save_reaction_roles():
+    with open("reaction_roles.json", "w") as f:
+        json.dump(
+            {
+                message_id: {
+                    str(emoji): role
+                    for emoji, role in roles.items()
+                }
+                for message_id, roles in reaction_roles.items()
+            },
+            f
+        )
+
+def load_reaction_roles():
+    global reaction_roles
+    try:
+        with open("reaction_roles.json", "r") as f:
+            data = json.load(f)
+            reaction_roles = {
+                int(k): {
+                    emoji: int(role)
+                    for emoji, role in v.items()
                 }
                 for k, v in data.items()
             }
     except FileNotFoundError:
-        subscriptions = {}
+        reaction_roles = {}
+    except json.JSONDecodeError as e:
+        print(f"Error decoding JSON: {e}")
+        reaction_roles = {}
 
 """Discord Bot Functions"""
 @tree.command(name="alerts", description="List the streamers the Discord channel is subscribed to alerts for")
@@ -469,6 +512,115 @@ async def list_ids(interaction: discord.Interaction):
 
     await interaction.response.send_message(embed=embed)
 
+@tree.command(name="setuproles", description="View a quick list of YT channel ids available to subscribe to.")
+async def message_setup(interaction: discord.Interaction, message_id: str):
+    if not message_id:
+        await interaction.response.send_message("Please provide the message ID or link to set up reactions.", ephemeral=True)
+        message_id = await bot.wait_for("message", timeout=60)
+
+    try:
+        channel = interaction.channel
+        target_message = await channel.fetch_message(int(message_id))
+    except Exception as e:
+        await interaction.response.send_message(f"Failed to fetch message: {e}")
+        return
+
+    await interaction.response.send_message("Send emoji-role pairs in the format: `:emoji: @Role1, :emoji: @Role2`.", ephemeral=True)
+    role_message = await bot.wait_for("message", timeout=60)
+
+    try:
+        message_int = int(message_id)
+        if message_int not in reaction_roles:
+            reaction_roles[message_int] = {}
+
+        pairs = role_message.content.split(",")
+
+        for pair in pairs:
+            emoji, role = pair.strip().split(" ")
+            role_id = int(role.strip("<@&>"))
+            if role:
+                reaction_roles[message_int][emoji.strip()] = role_id
+    except Exception as e:
+        await interaction.followup.send(f"Error parsing roles: {e}", ephemeral=True)
+        return
+
+    for emoji in reaction_roles[message_int].keys():
+        await target_message.add_reaction(emoji)
+    
+    # persist roles
+    # save_reaction_roles(message_int.id, reaction_roles)
+    await interaction.followup.send("Reactions added! Users can now interact to assign roles.", ephemeral=True)
+
+@bot.event
+async def on_raw_reaction_add(payload):
+    """Assign roles when a reaction is added."""
+    if payload.user_id == bot.user.id:
+        return
+    
+    if payload.message_id in reaction_roles:
+        guild = bot.get_guild(payload.guild_id)
+        if guild is None:
+            print("Guild not found.")
+            return
+
+        member = guild.get_member(int(payload.user_id))
+        if member is None:
+            try:
+                # Fetch the member if not in cache
+                member = await guild.fetch_member(payload.user_id)
+            except discord.NotFound:
+                print("Member not found.")
+                return
+            except discord.Forbidden:
+                print("Bot does not have permission to fetch member.")
+                return
+
+        emoji = str(payload.emoji)
+        if emoji in reaction_roles[payload.message_id]:
+            role = guild.get_role(reaction_roles[payload.message_id][emoji])
+            
+            if role:
+                await member.add_roles(role)
+
+        save_reaction_roles()
+
+@bot.event
+async def on_raw_reaction_remove(payload):
+    """Remove roles when a reaction is removed."""
+    if payload.message_id in reaction_roles:
+        guild = bot.get_guild(payload.guild_id)
+        if guild is None:
+            print("Guild not found.")
+            return
+
+        member = guild.get_member(int(payload.user_id))
+        if member is None:
+            try:
+                # Fetch the member if not in cache
+                member = await guild.fetch_member(payload.user_id)
+            except discord.NotFound:
+                print("Member not found.")
+                return
+            except discord.Forbidden:
+                print("Bot does not have permission to fetch member.")
+                return
+
+        emoji = str(payload.emoji)
+        if emoji in reaction_roles[payload.message_id]:
+            role = guild.get_role(reaction_roles[payload.message_id][emoji])
+            
+            if role:
+                await member.remove_roles(role)
+
+        save_reaction_roles()
+
+@bot.event
+async def on_raw_message_delete(payload):
+    message_id = payload.message_id
+    if message_id in reaction_roles:
+        del reaction_roles[message_id]
+        save_reaction_roles()
+
 @tasks.loop(minutes=5) # TODO: Change to 3 or 5 minutes when done testing
 async def periodic_live_stream_check():
     await check_for_live_streams()
@@ -477,6 +629,7 @@ async def periodic_live_stream_check():
 async def on_ready():
     print(f"Logged in as {bot.user}")
     load_subscriptions()
+    load_reaction_roles()
     await tree.sync() # Sync commands to the server
     periodic_live_stream_check.start()
 
