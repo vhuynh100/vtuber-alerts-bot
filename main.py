@@ -356,6 +356,37 @@ def load_subscriptions():
     except FileNotFoundError:
         subscriptions = {}
 
+def save_reaction_roles():
+    with open("reaction_roles.json", "w") as f:
+        json.dump(
+            {
+                message_id: {
+                    str(emoji): role
+                    for emoji, role in roles.items()
+                }
+                for message_id, roles in reaction_roles.items()
+            },
+            f
+        )
+
+def load_reaction_roles():
+    global reaction_roles
+    try:
+        with open("reaction_roles.json", "r") as f:
+            data = json.load(f)
+            reaction_roles = {
+                int(k): {
+                    emoji: int(role)
+                    for emoji, role in v.items()
+                }
+                for k, v in data.items()
+            }
+    except FileNotFoundError:
+        reaction_roles = {}
+    except json.JSONDecodeError as e:
+        print(f"Error decoding JSON: {e}")
+        reaction_roles = {}
+
 """Discord Bot Functions"""
 @tree.command(name="alerts", description="List the streamers the Discord channel is subscribed to alerts for")
 async def list_subscriptions(interaction: discord.Interaction):
@@ -551,6 +582,8 @@ async def on_raw_reaction_add(payload):
             if role:
                 await member.add_roles(role)
 
+        save_reaction_roles()
+
 @bot.event
 async def on_raw_reaction_remove(payload):
     """Remove roles when a reaction is removed."""
@@ -579,6 +612,8 @@ async def on_raw_reaction_remove(payload):
             if role:
                 await member.remove_roles(role)
 
+        save_reaction_roles()
+
 @tasks.loop(minutes=5) # TODO: Change to 3 or 5 minutes when done testing
 async def periodic_live_stream_check():
     await check_for_live_streams()
@@ -587,6 +622,7 @@ async def periodic_live_stream_check():
 async def on_ready():
     print(f"Logged in as {bot.user}")
     load_subscriptions()
+    load_reaction_roles()
     await tree.sync() # Sync commands to the server
     periodic_live_stream_check.start()
 
