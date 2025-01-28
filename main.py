@@ -632,7 +632,7 @@ async def on_raw_message_delete(payload):
         del reaction_roles[message_id]
         save_reaction_roles()
 
-@tasks.loop(seconds=5) # TODO: Change to 3 or 5 minutes when done testing
+@tasks.loop(minutes=5) # TODO: Change to 3 or 5 minutes when done testing
 async def periodic_live_stream_check():
     await check_for_live_streams()
 
