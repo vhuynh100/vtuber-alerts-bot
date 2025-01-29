@@ -20,52 +20,6 @@ company_icons = {
     "indie": "",
 }
 
-# List of YouTube channel IDs
-youtube_channel_ids = [
-    # Nijisanji EN
-    # "UCIeSUTOTkF9Hs7q3SGcO-Ow", # Elira Pendora
-    # "UCu-J8uIXuLZh16gG-cT1naw", # Finana Ryugu
-
-    # "UC4WvIIAo89_AzGUh1AZ6Dkg", # Rosemi Lovelock
-    # "UCgA2jKRkqpY_8eysPUs8sjw", # Petra Gurin
-
-    # "UCR6qhsLpn62WVxCBK1dkLow", # Enna Alouette
-    # "UC47rNmkDcNgbOcM-2BwzJTQ", "Millie Parfait"
-    # "UCBURM8S4LH7cRZ0Clea9RDA", # Reimu Endou
-    
-
-    # "UCwaS8_S7kMiKA3izlTWHbQg",  # Maria Marionette
-
-    # "UCGhqxhovNfaPBpxfCruy9EA", # Fulgur Ovid
-
-    # "UChKXd7oqD18qiIYBoRIHTlw", # Meloco Kyoran
-
-    # # Hololive EN Girls
-    # Myth
-    # "UCHsx4Hqa-1ORjQTh9TYDhww",  # Takanashi Kiara
-    # "UCL_qhgtOy0dy1Agp8vkySQg",  # Mori Calliope
-    # "UCMwGHR0BTZuLsmjY_NT5Pwg",  # Ninomae Ina'nis
-    # "UCoSrY_IQQVpmIRZ9Xf-y93g",  # Gawr Gura
-
-    # # Promise
-    # "UC8rcEBzJSleTkf_-agPM20g",  # IRyS
-    # "UCmbs8T6MWqUHP1tIQvSgKrg",  # Ouro Kronii
-    # "UC3n5uGu18FoCy23ggWWp8tA",  # Nanashi Mumei
-    # "UCgmPnx-EEeOrZSg5Tiw7ZRQ",  # Hakos Baelz
-
-    # # Advent
-    # "UCgnfPPb9JI3e9A4cXHnWbyg",  # Shiori Novella
-    # "UC9p_lqQ0FEDz327Vgf5JwqA",  # Koseki Bijou 	
-    # "UC_sFNM0z0MWm9A6WlKPuMMg",  # Nerissa Ravencroft
-    # "UCt9H_RpQzhxzlyBxFqrdHqA",  # FUWAMOCO
-
-    # # Justice
-    # "UCW5uhrG1eCBYditmhL0Ykjw",  # Elizabeth Rose Bloodflame
-    # "UCl69AEx4MdqMZH7Jtsm7Tig",  # Raora Panthera
-    # "UCDHABijvPBnJm7F-KlNME3w",  # Gigi Murin
-    # "UCvN5h1ShZtc7nly3pezRayg",  # Cecilia Immergreen
-]
-
 # Initialize Discord bot
 intents = discord.Intents.default()
 intents.message_content = True
@@ -78,7 +32,7 @@ class Streamer:
         self.channel_id = channel_id
         self.name = name
         self.company = company
-        self.mention = mention
+        self.mention = mention # string | None
 
     def __eq__(self, other): 
         if not isinstance(other, Streamer):
@@ -632,7 +586,7 @@ async def on_raw_message_delete(payload):
         del reaction_roles[message_id]
         save_reaction_roles()
 
-@tasks.loop(minutes=5) # TODO: Change to 3 or 5 minutes when done testing
+@tasks.loop(minutes=3) # TODO: Change to 3 or 5 minutes when done testing
 async def periodic_live_stream_check():
     await check_for_live_streams()
 
