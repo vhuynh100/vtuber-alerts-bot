@@ -46,12 +46,12 @@ tmux ls
 ```
 
 ## Commands:
-/subscribe: Subscribe a Discord channel to alerts for a streamer. Optionally, include a role to be mentioned on alert.
+/subscribe: Subscribe a Discord channel to alerts for a streamer. Optionally, include a role to be mentioned on alert. Command must be called in the target Discord channel.
 ```
 /subscribe <streamer_channel_id> <(optional) mention>
 ```
 
-/unsubscribe: Remove a YT channel from a Discord channel's notification list.
+/unsubscribe: Remove a YT channel from a Discord channel's notification list. Command must be called in the target Discord channel.
 ```
 /unsubscribe <streamer_channel_id>
 ```
@@ -66,7 +66,7 @@ tmux ls
 /quicklist
 ```
 
-/setuproles: Set up reaction roles so user can add/remove reactions to self-assign roles.
+/setuproles: Initiate the setup for adding reaction roles so a user can add or remove reactions to a target message to self-assign roles. Command must be called in the same channel as the target message.
 ```
 /setuproles <message_id>
 ```
