@@ -234,7 +234,7 @@ async def send_embed(videos, streamer, discord_channel_id, status):
                     value=f"<t:{int(datetime.fromisoformat(scheduled_start_time.replace('Z', '+00:00')).timestamp())}:d> <t:{int(datetime.fromisoformat(scheduled_start_time.replace('Z', '+00:00')).timestamp())}:t>", 
                     inline=True
                 )
-                embed.add_field(name=":busts_in_silhouette: Viewers", value=f"{int(concurrent_viewers)} watching now", inline=False)
+                embed.add_field(name=":busts_in_silhouette: Viewers", value=f"{int(concurrent_viewers) if concurrent_viewers.isdigit() else 'N/A'} watching now", inline=False)
                 thumbnail_url = f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg"
                 try:
                     response = requests.head(thumbnail_url)
